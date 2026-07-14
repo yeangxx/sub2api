@@ -136,6 +136,14 @@ func (r *accountRepository) Create(ctx context.Context, account *service.Account
 	if account.ParentAccountID != nil {
 		builder.SetParentAccountID(*account.ParentAccountID)
 	}
+	if account.FailureDomain != "" {
+		builder.SetFailureDomain(account.FailureDomain)
+	}
+	if account.ReliabilityClass != "" {
+		builder.SetReliabilityClass(account.ReliabilityClass)
+	}
+	builder.SetRoutingLabels(normalizeRoutingLabels(account.RoutingLabels))
+	builder.SetNillablePriceBookID(account.PriceBookID)
 
 	created, err := builder.Save(ctx)
 	if err != nil {
@@ -410,6 +418,18 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 
 	builder.SetQuotaDimension(dbaccount.QuotaDimension(account.QuotaDimensionOrDefault()))
 	builder.SetNillableParentAccountID(account.ParentAccountID)
+	if account.FailureDomain != "" {
+		builder.SetFailureDomain(account.FailureDomain)
+	} else {
+		builder.ClearFailureDomain()
+	}
+	if account.ReliabilityClass != "" {
+		builder.SetReliabilityClass(account.ReliabilityClass)
+	} else {
+		builder.ClearReliabilityClass()
+	}
+	builder.SetRoutingLabels(normalizeRoutingLabels(account.RoutingLabels))
+	builder.SetNillablePriceBookID(account.PriceBookID)
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
@@ -2115,6 +2135,10 @@ func accountEntityToService(m *dbent.Account) *service.Account {
 		SessionWindowStatus:     derefString(m.SessionWindowStatus),
 		ParentAccountID:         m.ParentAccountID,
 		QuotaDimension:          string(m.QuotaDimension),
+		FailureDomain:           derefString(m.FailureDomain),
+		ReliabilityClass:        derefString(m.ReliabilityClass),
+		RoutingLabels:           copyStringMap(m.RoutingLabels),
+		PriceBookID:             m.PriceBookID,
 	}
 }
 
@@ -2130,6 +2154,24 @@ func copyJSONMap(in map[string]any) map[string]any {
 		return nil
 	}
 	out := make(map[string]any, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func normalizeRoutingLabels(in map[string]string) map[string]string {
+	if in == nil {
+		return map[string]string{}
+	}
+	return in
+}
+
+func copyStringMap(in map[string]string) map[string]string {
+	if in == nil {
+		return nil
+	}
+	out := make(map[string]string, len(in))
 	for k, v := range in {
 		out[k] = v
 	}

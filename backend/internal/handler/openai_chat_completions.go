@@ -62,6 +62,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
+	c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 
 	if !gjson.ValidBytes(body) {
 		logRequestBodyParseFailure(reqLog, body, nil)
@@ -129,6 +130,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 	promptCacheKey := h.gatewayService.ExtractSessionID(c, body)
 
 	maxAccountSwitches := h.maxAccountSwitches
+	if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), apiKey.GroupID, maxAccountSwitches); ok {
+		maxAccountSwitches = limit
+	}
 	switchCount := 0
 	failedAccountIDs := make(map[int64]struct{})
 	sameAccountRetryCount := make(map[int64]int)
@@ -193,17 +197,21 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		forwardStart := time.Now()
 
 		forwardBody := body
-		if channelMapping.Mapped {
+		if mapped := strings.TrimSpace(selection.RoutingMappedModel); mapped != "" && mapped != reqModel {
+			forwardBody = h.gatewayService.ReplaceModelInBody(body, mapped)
+		} else if channelMapping.Mapped {
 			forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
 		}
 		writerSizeBeforeForward := c.Writer.Size()
+		attemptCtx, finishRoutingAttempt := beginRoutingAttempt(c, selection, reqStream)
 		result, err := func() (*service.OpenAIForwardResult, error) {
+			defer finishRoutingAttempt()
 			defer func() {
 				if accountReleaseFunc != nil {
 					accountReleaseFunc()
 				}
 			}()
-			return h.gatewayService.ForwardAsChatCompletions(c.Request.Context(), c, account, forwardBody, promptCacheKey, "")
+			return h.gatewayService.ForwardAsChatCompletions(attemptCtx, c, account, forwardBody, promptCacheKey, "")
 		}()
 		cyberBlockKeyChat := ""
 		if service.GetOpsCyberPolicy(c) != nil {
@@ -230,12 +238,12 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				)
 			} else {
 				var failoverErr *service.UpstreamFailoverError
-				if errors.As(err, &failoverErr) {
+				if errors.As(err, &failoverErr) && h.gatewayService.RoutingErrorRetryable(c.Request.Context(), apiKey.GroupID, err) {
 					if c.Writer.Size() != writerSizeBeforeForward {
 						h.handleFailoverExhausted(c, failoverErr, true)
 						return
 					}
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
 					// Pool mode: retry on the same account
 					if failoverErr.RetryableOnSameAccount {
 						retryLimit := account.GetPoolModeRetryCount()
@@ -275,7 +283,15 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 					)
 					continue
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+				if h.gatewayService.RoutingTransportErrorRetryable(c.Request.Context(), apiKey.GroupID, err) &&
+					c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
+					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+					h.gatewayService.RecordOpenAIAccountSwitch()
+					failedAccountIDs[account.ID] = struct{}{}
+					switchCount++
+					continue
+				}
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
 				upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
 				wroteFallback := false
 				if !upstreamErrorAlreadyCommunicated {
@@ -291,9 +307,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			}
 		}
 		if result != nil {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, true, result.FirstTokenMs)
 		} else {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, true, nil)
 		}
 
 		userAgent := c.GetHeader("User-Agent")

@@ -503,6 +503,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/routing-policies',
+    name: 'AdminRoutingPolicies',
+    component: () => import('@/views/admin/RoutingPoliciesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Routing Policies',
+      titleKey: 'admin.routingPolicies.title',
+      descriptionKey: 'admin.routingPolicies.description'
+    }
+  },
+  {
     path: '/admin/announcements',
     name: 'AdminAnnouncements',
     component: () => import('@/views/admin/AnnouncementsView.vue'),

@@ -316,6 +316,10 @@ type CreateAccountInput struct {
 	GroupIDs           []int64
 	ExpiresAt          *int64
 	AutoPauseOnExpired *bool
+	FailureDomain      string
+	ReliabilityClass   string
+	RoutingLabels      map[string]string
+	PriceBookID        *int64
 	// SkipDefaultGroupBind prevents auto-binding to platform default group when GroupIDs is empty.
 	SkipDefaultGroupBind bool
 	// SkipMixedChannelCheck skips the mixed channel risk check when binding groups.
@@ -347,6 +351,10 @@ type UpdateAccountInput struct {
 	GroupIDs              *[]int64
 	ExpiresAt             *int64
 	AutoPauseOnExpired    *bool
+	FailureDomain         *string
+	ReliabilityClass      *string
+	RoutingLabels         *map[string]string
+	PriceBookID           *int64
 	SkipMixedChannelCheck bool // 跳过混合渠道检查（用户已确认风险）
 }
 

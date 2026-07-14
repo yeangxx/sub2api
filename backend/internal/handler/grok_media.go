@@ -90,6 +90,7 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 			return
 		}
+		c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 	}
 
 	contentType := c.GetHeader("Content-Type")
@@ -171,6 +172,9 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 	if maxAccountSwitches <= 0 {
 		maxAccountSwitches = 3
 	}
+	if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(requestCtx, apiKey.GroupID, maxAccountSwitches); ok {
+		maxAccountSwitches = limit
+	}
 	routingStart := time.Now()
 
 	for {
@@ -237,13 +241,15 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
 		writerSizeBeforeForward := c.Writer.Size()
+		attemptCtx, finishRoutingAttempt := beginRoutingAttempt(c, selection, false)
 		result, err := func() (*service.OpenAIForwardResult, error) {
+			defer finishRoutingAttempt()
 			defer func() {
 				if accountReleaseFunc != nil {
 					accountReleaseFunc()
 				}
 			}()
-			return h.gatewayService.ForwardGrokMedia(requestCtx, c, account, endpoint, requestID, body, contentType)
+			return h.gatewayService.ForwardGrokMedia(attemptCtx, c, account, endpoint, requestID, body, contentType)
 		}()
 
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
@@ -256,8 +262,8 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
-			if errors.As(err, &failoverErr) {
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+			if errors.As(err, &failoverErr) && h.gatewayService.RoutingErrorRetryable(requestCtx, apiKey.GroupID, err) {
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
 				if c.Writer.Size() != writerSizeBeforeForward {
 					h.handleFailoverExhausted(c, failoverErr, true)
 					return
@@ -296,7 +302,15 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 				)
 				continue
 			}
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+			if h.gatewayService.RoutingTransportErrorRetryable(requestCtx, apiKey.GroupID, err) &&
+				c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
+				h.gatewayService.RecordOpenAIAccountSwitch()
+				failedAccountIDs[account.ID] = struct{}{}
+				switchCount++
+				continue
+			}
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
 			if c.Writer.Size() == writerSizeBeforeForward {
 				h.errorResponse(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
 			}
@@ -307,7 +321,7 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 			return
 		}
 
-		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, true, nil)
 		if endpoint.IsGenerationRequest() && strings.TrimSpace(result.ResponseID) != "" {
 			if err := h.gatewayService.BindGrokMediaVideoRequestAccount(requestCtx, apiKey.GroupID, result.ResponseID, account.ID); err != nil {
 				reqLog.Warn("grok_media.bind_video_request_account_failed",

@@ -2,10 +2,32 @@ package setup
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestGetDataDirUsesWorkingDirectoryOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows path semantics only")
+	}
+
+	t.Setenv("DATA_DIR", "")
+	tempDir := t.TempDir()
+	originalDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd() error = %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(originalDir) })
+
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Chdir() error = %v", err)
+	}
+	if got := GetDataDir(); got != "." {
+		t.Fatalf("GetDataDir()=%q, want current directory", got)
+	}
+}
 
 func TestDecideAdminBootstrap(t *testing.T) {
 	t.Parallel()

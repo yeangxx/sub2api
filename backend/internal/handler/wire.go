@@ -41,6 +41,7 @@ func ProvideAdminHandlers(
 	paymentHandler *admin.PaymentHandler,
 	affiliateHandler *admin.AffiliateHandler,
 	complianceHandler *admin.ComplianceHandler,
+	routingPolicyHandler *admin.RoutingPolicyHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
 		Dashboard:              dashboardHandler,
@@ -75,7 +76,17 @@ func ProvideAdminHandlers(
 		Payment:                paymentHandler,
 		Affiliate:              affiliateHandler,
 		Compliance:             complianceHandler,
+		RoutingPolicy:          routingPolicyHandler,
 	}
+}
+
+func ProvideRoutingPolicyHandler(
+	control *service.RoutingPolicyControlService,
+	accountRepo service.AccountRepository,
+	runtime *service.RoutingPolicyRuntime,
+	encryptor service.SecretEncryptor,
+) *admin.RoutingPolicyHandler {
+	return admin.NewRoutingPolicyHandler(control, accountRepo, runtime, encryptor)
 }
 
 // ProvideSystemHandler creates admin.SystemHandler with UpdateService
@@ -193,6 +204,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewPaymentHandler,
 	admin.NewAffiliateHandler,
 	admin.NewComplianceHandler,
+	ProvideRoutingPolicyHandler,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

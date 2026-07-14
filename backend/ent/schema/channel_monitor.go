@@ -70,6 +70,10 @@ func (ChannelMonitor) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Int64("created_by"),
+		field.Int64("account_id").
+			Optional().
+			Nillable().
+			Comment("Optional upstream account used by production routing health feedback."),
 
 		// ---- 自定义请求快照字段（来自模板 / 手动编辑） ----
 
@@ -115,5 +119,6 @@ func (ChannelMonitor) Indexes() []ent.Index {
 		index.Fields("provider", "api_mode"),
 		index.Fields("group_name"),
 		index.Fields("template_id"),
+		index.Fields("account_id"),
 	}
 }

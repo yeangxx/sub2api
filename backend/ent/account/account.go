@@ -78,6 +78,14 @@ const (
 	FieldParentAccountID = "parent_account_id"
 	// FieldQuotaDimension holds the string denoting the quota_dimension field in the database.
 	FieldQuotaDimension = "quota_dimension"
+	// FieldFailureDomain holds the string denoting the failure_domain field in the database.
+	FieldFailureDomain = "failure_domain"
+	// FieldReliabilityClass holds the string denoting the reliability_class field in the database.
+	FieldReliabilityClass = "reliability_class"
+	// FieldRoutingLabels holds the string denoting the routing_labels field in the database.
+	FieldRoutingLabels = "routing_labels"
+	// FieldPriceBookID holds the string denoting the price_book_id field in the database.
+	FieldPriceBookID = "price_book_id"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
 	// EdgeProxy holds the string denoting the proxy edge name in mutations.
@@ -162,6 +170,10 @@ var Columns = []string{
 	FieldSessionWindowStatus,
 	FieldParentAccountID,
 	FieldQuotaDimension,
+	FieldFailureDomain,
+	FieldReliabilityClass,
+	FieldRoutingLabels,
+	FieldPriceBookID,
 }
 
 var (
@@ -220,6 +232,12 @@ var (
 	DefaultSchedulable bool
 	// SessionWindowStatusValidator is a validator for the "session_window_status" field. It is called by the builders before save.
 	SessionWindowStatusValidator func(string) error
+	// FailureDomainValidator is a validator for the "failure_domain" field. It is called by the builders before save.
+	FailureDomainValidator func(string) error
+	// ReliabilityClassValidator is a validator for the "reliability_class" field. It is called by the builders before save.
+	ReliabilityClassValidator func(string) error
+	// DefaultRoutingLabels holds the default value on creation for the "routing_labels" field.
+	DefaultRoutingLabels func() map[string]string
 )
 
 // QuotaDimension defines the type for the "quota_dimension" enum field.
@@ -399,6 +417,21 @@ func ByParentAccountID(opts ...sql.OrderTermOption) OrderOption {
 // ByQuotaDimension orders the results by the quota_dimension field.
 func ByQuotaDimension(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldQuotaDimension, opts...).ToFunc()
+}
+
+// ByFailureDomain orders the results by the failure_domain field.
+func ByFailureDomain(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFailureDomain, opts...).ToFunc()
+}
+
+// ByReliabilityClass orders the results by the reliability_class field.
+func ByReliabilityClass(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReliabilityClass, opts...).ToFunc()
+}
+
+// ByPriceBookID orders the results by the price_book_id field.
+func ByPriceBookID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPriceBookID, opts...).ToFunc()
 }
 
 // ByGroupsCount orders the results by groups count.

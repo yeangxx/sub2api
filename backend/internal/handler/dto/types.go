@@ -273,8 +273,12 @@ type Account struct {
 	QuotaNotifyTotalThreshold  *float64 `json:"quota_notify_total_threshold,omitempty"`
 
 	// 影子账号关系（spark 维度影子）
-	ParentAccountID *int64 `json:"parent_account_id,omitempty"`
-	QuotaDimension  string `json:"quota_dimension,omitempty"`
+	ParentAccountID  *int64            `json:"parent_account_id,omitempty"`
+	QuotaDimension   string            `json:"quota_dimension,omitempty"`
+	FailureDomain    string            `json:"failure_domain,omitempty"`
+	ReliabilityClass string            `json:"reliability_class,omitempty"`
+	RoutingLabels    map[string]string `json:"routing_labels,omitempty"`
+	PriceBookID      *int64            `json:"price_book_id,omitempty"`
 
 	// 影子账号回填的母账号信息（仅影子非空，源自母账号 Credentials/Extra）
 	ParentEmail                 string `json:"parent_email,omitempty"`

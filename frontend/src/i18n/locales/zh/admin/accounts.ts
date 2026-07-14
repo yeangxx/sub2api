@@ -903,6 +903,7 @@ export default {
           },
           // Refresh Token auth
           refreshTokenAuth: '手动输入 RT',
+          mobileRefreshTokenAuth: 'ChatGPT iOS RT',
           refreshTokenDesc: '输入您已有的 OpenAI Refresh Token，支持批量输入（每行一个），系统将自动验证并创建账号。',
           refreshTokenPlaceholder: '粘贴您的 OpenAI Refresh Token...\n支持多个，每行一个',
           codexSessionAuth: 'Codex JSON / AT 批量输入',
@@ -1269,6 +1270,20 @@ export default {
         todayCost: '今日费用',
         usageTrend: '30天费用与请求趋势',
         noData: '该账号暂无使用数据'
+      },
+      routing: {
+        title: '路由设置',
+        failureDomain: '故障域',
+        failureDomainPlaceholder: '例如 provider-a 或 region-hk',
+        failureDomainHint: 'Hedge 可要求备用请求使用不同故障域。',
+        reliabilityClass: '可靠性等级',
+        reliabilityPlaceholder: '选择或输入等级',
+        priceBook: '上游价格表',
+        priceBookPlaceholder: '不绑定价格表',
+        priceBookLoading: '正在加载价格表...',
+        priceBookLoadFailed: '价格表加载失败',
+        priceBookRetry: '重试',
+        labels: '路由标签'
       }
     },
 

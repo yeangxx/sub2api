@@ -1841,7 +1841,18 @@ func (s *OpenAIGatewayService) isOpenAIAccountTransportCompatible(account *Accou
 	return s.getOpenAIWSProtocolResolver().Resolve(account).Transport == requiredTransport
 }
 
-func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64, success bool, firstTokenMs *int) {
+func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64, model string, success bool, firstTokenMs *int) {
+	if s != nil && s.routingPolicyRuntime != nil {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			model = "*"
+		}
+		var ttft time.Duration
+		if firstTokenMs != nil && *firstTokenMs > 0 {
+			ttft = time.Duration(*firstTokenMs) * time.Millisecond
+		}
+		s.routingPolicyRuntime.RecordUnscopedResult(context.Background(), accountID, model, "openai", success, ttft)
+	}
 	scheduler := s.getOpenAIAccountScheduler(context.Background())
 	if scheduler == nil {
 		return

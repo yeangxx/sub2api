@@ -151,6 +151,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
+	c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 
 	setOpsRequestContext(c, "", false)
 
@@ -289,7 +290,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 	hasBoundSession := sessionKey != "" && sessionBoundAccountID > 0
 
 	if platform == service.PlatformGemini {
-		fs := NewFailoverState(h.maxAccountSwitchesGemini, hasBoundSession)
+		maxSwitches := h.maxAccountSwitchesGemini
+		if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), apiKey.GroupID, maxSwitches); ok {
+			maxSwitches = limit
+		}
+		fs := NewFailoverState(maxSwitches, hasBoundSession)
 
 		// 单账号分组提前设置 SingleAccountRetry 标记，让 Service 层首次 503 就不设模型限流标记。
 		// 避免单账号分组收到 503 (MODEL_CAPACITY_EXHAUSTED) 时设 29s 限流，导致后续请求连续快速失败。
@@ -567,7 +572,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 	}
 
 	for {
-		fs := NewFailoverState(h.maxAccountSwitches, hasBoundSession)
+		maxSwitches := h.maxAccountSwitches
+		if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), currentAPIKey.GroupID, maxSwitches); ok {
+			maxSwitches = limit
+		}
+		fs := NewFailoverState(maxSwitches, hasBoundSession)
 		retryWithFallback := false
 
 		for {
@@ -795,6 +804,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			} else {
 				result, err = h.gatewayService.Forward(requestCtx, c, account, attemptParsedReq)
 			}
+			var routingTTFT time.Duration
+			if result != nil && result.FirstTokenMs != nil && *result.FirstTokenMs > 0 {
+				routingTTFT = time.Duration(*result.FirstTokenMs) * time.Millisecond
+			}
+			h.gatewayService.ReportRoutingResult(requestCtx, account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
 
 			// 兜底释放串行锁（正常情况已通过回调提前释放）
 			if queueRelease != nil {

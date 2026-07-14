@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
@@ -58,6 +59,7 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		h.chatCompletionsErrorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
+	c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 
 	setOpsRequestContext(c, "", false)
 
@@ -153,9 +155,17 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 	}
 
 	// 3. Account selection + failover loop
-	fs := NewFailoverState(h.maxAccountSwitches, false)
+	maxAccountSwitches := h.maxAccountSwitches
+	if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), apiKey.GroupID, maxAccountSwitches); ok {
+		maxAccountSwitches = limit
+	}
+	fs := NewFailoverState(maxAccountSwitches, false)
 	if groupPlatform == service.PlatformGemini {
-		fs = NewFailoverState(h.maxAccountSwitchesGemini, false)
+		geminiLimit := h.maxAccountSwitchesGemini
+		if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), apiKey.GroupID, geminiLimit); ok {
+			geminiLimit = limit
+		}
+		fs = NewFailoverState(geminiLimit, false)
 	}
 
 	for {
@@ -226,9 +236,13 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		// 5. Forward request
 		writerSizeBeforeForward := c.Writer.Size()
 		forwardBody := body
-		if channelMapping.Mapped {
+		if mapped := strings.TrimSpace(selection.RoutingMappedModel); mapped != "" && mapped != reqModel {
+			forwardBody = service.ReplaceModelInBody(body, mapped)
+		}
+		if strings.TrimSpace(selection.RoutingMappedModel) == "" && channelMapping.Mapped {
 			forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
 		}
+		attemptCtx, finishRoutingAttempt := beginRoutingAttempt(c, selection, reqStream)
 		var result *service.ForwardResult
 		if account.Platform == service.PlatformGemini {
 			if h.geminiCompatService == nil {
@@ -238,10 +252,16 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 				}
 				return
 			}
-			result, err = h.geminiCompatService.ForwardAsChatCompletions(c.Request.Context(), c, account, forwardBody)
+			result, err = h.geminiCompatService.ForwardAsChatCompletions(attemptCtx, c, account, forwardBody)
 		} else {
-			result, err = h.gatewayService.ForwardAsChatCompletions(c.Request.Context(), c, account, forwardBody, parsedReq)
+			result, err = h.gatewayService.ForwardAsChatCompletions(attemptCtx, c, account, forwardBody, parsedReq)
 		}
+		finishRoutingAttempt()
+		var routingTTFT time.Duration
+		if result != nil && result.FirstTokenMs != nil && *result.FirstTokenMs > 0 {
+			routingTTFT = time.Duration(*result.FirstTokenMs) * time.Millisecond
+		}
+		h.gatewayService.ReportRoutingResult(c.Request.Context(), account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
 
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()

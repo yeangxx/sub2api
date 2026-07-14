@@ -270,6 +270,9 @@ func (s *OpenAIOAuthService) enrichTokenInfo(ctx context.Context, tokenInfo *Ope
 		}
 	}
 	if info := fetchChatGPTAccountInfo(ctx, s.privacyClientFactory, tokenInfo.AccessToken, proxyURL, orgID); info != nil {
+		if strings.TrimSpace(tokenInfo.ChatGPTAccountID) == "" && strings.TrimSpace(info.AccountID) != "" {
+			tokenInfo.ChatGPTAccountID = info.AccountID
+		}
 		// chatgpt_plan_type from the ID token is the canonical personal-plan value.
 		// accounts/check is a multi-account/workspace endpoint; inactive team or
 		// business workspaces can otherwise overwrite Pro/Free with internal

@@ -1,0 +1,12 @@
+# Expose only development dependencies to programs running on the host.
+# Start with:
+#   docker compose -f docker-compose.local.yml -f docker-compose.host-dev.yml up -d postgres redis
+
+services:
+  postgres:
+    ports:
+      - "${DEV_DATABASE_BIND_HOST:-127.0.0.1}:${DEV_DATABASE_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${DEV_REDIS_BIND_HOST:-127.0.0.1}:${DEV_REDIS_PORT:-6379}:6379"

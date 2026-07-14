@@ -817,6 +817,7 @@ export default {
           },
           // Refresh Token auth
           refreshTokenAuth: 'Manual RT Input',
+          mobileRefreshTokenAuth: 'ChatGPT iOS RT',
           refreshTokenDesc: 'Enter your existing OpenAI Refresh Token(s). Supports batch input (one per line). The system will automatically validate and create accounts.',
           refreshTokenPlaceholder: 'Paste your OpenAI Refresh Token...\nSupports multiple, one per line',
           codexSessionAuth: 'Codex JSON / AT Batch Input',
@@ -1254,7 +1255,21 @@ export default {
       linkCopied: 'Link Copied',
       needsReauth: 'Re-auth Required',
       rateLimited: 'Rate Limited',
-      usageError: 'Fetch Error'
+      usageError: 'Fetch Error',
+      routing: {
+        title: 'Routing settings',
+        failureDomain: 'Failure domain',
+        failureDomainPlaceholder: 'provider-a or region-hk',
+        failureDomainHint: 'Hedged attempts can be required to use a different domain.',
+        reliabilityClass: 'Reliability class',
+        reliabilityPlaceholder: 'Select or enter a class',
+        priceBook: 'Upstream price book',
+        priceBookPlaceholder: 'No price book',
+        priceBookLoading: 'Loading price books...',
+        priceBookLoadFailed: 'Failed to load price books',
+        priceBookRetry: 'Retry',
+        labels: 'Routing labels'
+      }
     },
 
     // Scheduled Tests

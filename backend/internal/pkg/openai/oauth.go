@@ -18,6 +18,11 @@ const (
 	// OAuth Client ID for OpenAI (Codex CLI official)
 	ClientID = "app_EMoamEEZ73f0CkXaXp7hrann"
 
+	// ChatGPTIOSClientID and ChatGPTIOSRedirectURI identify the official
+	// ChatGPT iOS OAuth flow used by iOS-issued refresh tokens.
+	ChatGPTIOSClientID    = "app_2SKx67EdpoN0G6j64rFvigXD"
+	ChatGPTIOSRedirectURI = "com.openai.chat://auth0.openai.com/ios/com.openai.chat/callback"
+
 	// OAuth endpoints
 	AuthorizeURL = "https://auth.openai.com/oauth/authorize"
 	TokenURL     = "https://auth.openai.com/oauth/token"

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -182,6 +183,34 @@ func (s *OpenAIOAuthServiceSuite) TestRefreshToken_UseProvidedClientID() {
 	require.Equal(s.T(), "at-custom", resp.AccessToken)
 	require.Equal(s.T(), "rt-custom", resp.RefreshToken)
 	require.Equal(s.T(), []string{customClientID}, seenClientIDs)
+}
+
+func (s *OpenAIOAuthServiceSuite) TestRefreshTokenWithClientID_IOSUsesJSONRequest() {
+	const iosClientID = "app_2SKx67EdpoN0G6j64rFvigXD"
+	const iosRedirectURI = "com.openai.chat://auth0.openai.com/ios/com.openai.chat/callback"
+
+	var contentType string
+	var payload map[string]string
+	var decodeErr error
+	s.setupServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType = r.Header.Get("Content-Type")
+		payload = map[string]string{}
+		decodeErr = json.NewDecoder(r.Body).Decode(&payload)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"access_token":"at-ios","refresh_token":"rt-ios","token_type":"bearer","expires_in":3600}`)
+	}))
+
+	resp, err := s.svc.RefreshTokenWithClientID(s.ctx, "rt", "", iosClientID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "application/json", contentType)
+	require.NoError(s.T(), decodeErr)
+	require.Equal(s.T(), map[string]string{
+		"client_id":     iosClientID,
+		"grant_type":    "refresh_token",
+		"redirect_uri":  iosRedirectURI,
+		"refresh_token": "rt",
+	}, payload)
+	require.Equal(s.T(), "at-ios", resp.AccessToken)
 }
 
 func (s *OpenAIOAuthServiceSuite) TestNonSuccessStatus_IncludesBody() {

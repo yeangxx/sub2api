@@ -59,8 +59,9 @@ type ChannelMonitorRepository interface {
 
 // ChannelMonitorService 渠道监控管理服务。
 type ChannelMonitorService struct {
-	repo      ChannelMonitorRepository
-	encryptor SecretEncryptor
+	repo                 ChannelMonitorRepository
+	encryptor            SecretEncryptor
+	routingPolicyRuntime *RoutingPolicyRuntime
 	// scheduler 由 wire 通过 SetScheduler 注入；CRUD 后调用对应钩子即时同步任务。
 	// 测试或未注入场景下保持 nil，所有钩子调用变为 no-op。
 	scheduler MonitorScheduler
@@ -69,6 +70,12 @@ type ChannelMonitorService struct {
 // NewChannelMonitorService 创建渠道监控服务实例。
 func NewChannelMonitorService(repo ChannelMonitorRepository, encryptor SecretEncryptor) *ChannelMonitorService {
 	return &ChannelMonitorService{repo: repo, encryptor: encryptor}
+}
+
+func (s *ChannelMonitorService) SetRoutingPolicyRuntime(runtime *RoutingPolicyRuntime) {
+	if s != nil {
+		s.routingPolicyRuntime = runtime
+	}
 }
 
 // ---------- CRUD ----------
@@ -130,6 +137,7 @@ func (s *ChannelMonitorService) Create(ctx context.Context, p ChannelMonitorCrea
 		IntervalSeconds:  p.IntervalSeconds,
 		JitterSeconds:    p.JitterSeconds,
 		CreatedBy:        p.CreatedBy,
+		AccountID:        p.AccountID,
 		TemplateID:       p.TemplateID,
 		ExtraHeaders:     emptyHeadersIfNil(p.ExtraHeaders),
 		BodyOverrideMode: defaultBodyMode(p.BodyOverrideMode),
@@ -284,6 +292,13 @@ func (s *ChannelMonitorService) persistCheckResults(ctx context.Context, m *Chan
 			Message:       r.Message,
 			CheckedAt:     r.CheckedAt,
 		})
+		if m.AccountID != nil && s.routingPolicyRuntime != nil {
+			latency := time.Duration(0)
+			if r.LatencyMs != nil && *r.LatencyMs > 0 {
+				latency = time.Duration(*r.LatencyMs) * time.Millisecond
+			}
+			s.routingPolicyRuntime.RecordMonitorResult(ctx, *m.AccountID, r.Model, "monitor", r.Status == "operational" || r.Status == "degraded", latency)
+		}
 	}
 	if err := s.repo.InsertHistoryBatch(ctx, rows); err != nil {
 		slog.Error("channel_monitor: insert history failed",
@@ -503,6 +518,12 @@ func applyMonitorUpdate(existing *ChannelMonitor, p ChannelMonitorUpdateParams) 
 	}
 	if p.GroupName != nil {
 		existing.GroupName = strings.TrimSpace(*p.GroupName)
+	}
+	if p.ClearAccountID {
+		existing.AccountID = nil
+	} else if p.AccountID != nil {
+		id := *p.AccountID
+		existing.AccountID = &id
 	}
 	if p.Enabled != nil {
 		existing.Enabled = *p.Enabled

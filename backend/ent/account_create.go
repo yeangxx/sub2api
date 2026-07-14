@@ -419,6 +419,54 @@ func (_c *AccountCreate) SetNillableQuotaDimension(v *account.QuotaDimension) *A
 	return _c
 }
 
+// SetFailureDomain sets the "failure_domain" field.
+func (_c *AccountCreate) SetFailureDomain(v string) *AccountCreate {
+	_c.mutation.SetFailureDomain(v)
+	return _c
+}
+
+// SetNillableFailureDomain sets the "failure_domain" field if the given value is not nil.
+func (_c *AccountCreate) SetNillableFailureDomain(v *string) *AccountCreate {
+	if v != nil {
+		_c.SetFailureDomain(*v)
+	}
+	return _c
+}
+
+// SetReliabilityClass sets the "reliability_class" field.
+func (_c *AccountCreate) SetReliabilityClass(v string) *AccountCreate {
+	_c.mutation.SetReliabilityClass(v)
+	return _c
+}
+
+// SetNillableReliabilityClass sets the "reliability_class" field if the given value is not nil.
+func (_c *AccountCreate) SetNillableReliabilityClass(v *string) *AccountCreate {
+	if v != nil {
+		_c.SetReliabilityClass(*v)
+	}
+	return _c
+}
+
+// SetRoutingLabels sets the "routing_labels" field.
+func (_c *AccountCreate) SetRoutingLabels(v map[string]string) *AccountCreate {
+	_c.mutation.SetRoutingLabels(v)
+	return _c
+}
+
+// SetPriceBookID sets the "price_book_id" field.
+func (_c *AccountCreate) SetPriceBookID(v int64) *AccountCreate {
+	_c.mutation.SetPriceBookID(v)
+	return _c
+}
+
+// SetNillablePriceBookID sets the "price_book_id" field if the given value is not nil.
+func (_c *AccountCreate) SetNillablePriceBookID(v *int64) *AccountCreate {
+	if v != nil {
+		_c.SetPriceBookID(*v)
+	}
+	return _c
+}
+
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (_c *AccountCreate) AddGroupIDs(ids ...int64) *AccountCreate {
 	_c.mutation.AddGroupIDs(ids...)
@@ -581,6 +629,13 @@ func (_c *AccountCreate) defaults() error {
 		v := account.DefaultQuotaDimension
 		_c.mutation.SetQuotaDimension(v)
 	}
+	if _, ok := _c.mutation.RoutingLabels(); !ok {
+		if account.DefaultRoutingLabels == nil {
+			return fmt.Errorf("ent: uninitialized account.DefaultRoutingLabels (forgotten import ent/runtime?)")
+		}
+		v := account.DefaultRoutingLabels()
+		_c.mutation.SetRoutingLabels(v)
+	}
 	return nil
 }
 
@@ -657,6 +712,19 @@ func (_c *AccountCreate) check() error {
 		if err := account.QuotaDimensionValidator(v); err != nil {
 			return &ValidationError{Name: "quota_dimension", err: fmt.Errorf(`ent: validator failed for field "Account.quota_dimension": %w`, err)}
 		}
+	}
+	if v, ok := _c.mutation.FailureDomain(); ok {
+		if err := account.FailureDomainValidator(v); err != nil {
+			return &ValidationError{Name: "failure_domain", err: fmt.Errorf(`ent: validator failed for field "Account.failure_domain": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.ReliabilityClass(); ok {
+		if err := account.ReliabilityClassValidator(v); err != nil {
+			return &ValidationError{Name: "reliability_class", err: fmt.Errorf(`ent: validator failed for field "Account.reliability_class": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.RoutingLabels(); !ok {
+		return &ValidationError{Name: "routing_labels", err: errors.New(`ent: missing required field "Account.routing_labels"`)}
 	}
 	return nil
 }
@@ -800,6 +868,22 @@ func (_c *AccountCreate) createSpec() (*Account, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.QuotaDimension(); ok {
 		_spec.SetField(account.FieldQuotaDimension, field.TypeEnum, value)
 		_node.QuotaDimension = value
+	}
+	if value, ok := _c.mutation.FailureDomain(); ok {
+		_spec.SetField(account.FieldFailureDomain, field.TypeString, value)
+		_node.FailureDomain = &value
+	}
+	if value, ok := _c.mutation.ReliabilityClass(); ok {
+		_spec.SetField(account.FieldReliabilityClass, field.TypeString, value)
+		_node.ReliabilityClass = &value
+	}
+	if value, ok := _c.mutation.RoutingLabels(); ok {
+		_spec.SetField(account.FieldRoutingLabels, field.TypeJSON, value)
+		_node.RoutingLabels = value
+	}
+	if value, ok := _c.mutation.PriceBookID(); ok {
+		_spec.SetField(account.FieldPriceBookID, field.TypeInt64, value)
+		_node.PriceBookID = &value
 	}
 	if nodes := _c.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1431,6 +1515,78 @@ func (u *AccountUpsert) UpdateQuotaDimension() *AccountUpsert {
 	return u
 }
 
+// SetFailureDomain sets the "failure_domain" field.
+func (u *AccountUpsert) SetFailureDomain(v string) *AccountUpsert {
+	u.Set(account.FieldFailureDomain, v)
+	return u
+}
+
+// UpdateFailureDomain sets the "failure_domain" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateFailureDomain() *AccountUpsert {
+	u.SetExcluded(account.FieldFailureDomain)
+	return u
+}
+
+// ClearFailureDomain clears the value of the "failure_domain" field.
+func (u *AccountUpsert) ClearFailureDomain() *AccountUpsert {
+	u.SetNull(account.FieldFailureDomain)
+	return u
+}
+
+// SetReliabilityClass sets the "reliability_class" field.
+func (u *AccountUpsert) SetReliabilityClass(v string) *AccountUpsert {
+	u.Set(account.FieldReliabilityClass, v)
+	return u
+}
+
+// UpdateReliabilityClass sets the "reliability_class" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateReliabilityClass() *AccountUpsert {
+	u.SetExcluded(account.FieldReliabilityClass)
+	return u
+}
+
+// ClearReliabilityClass clears the value of the "reliability_class" field.
+func (u *AccountUpsert) ClearReliabilityClass() *AccountUpsert {
+	u.SetNull(account.FieldReliabilityClass)
+	return u
+}
+
+// SetRoutingLabels sets the "routing_labels" field.
+func (u *AccountUpsert) SetRoutingLabels(v map[string]string) *AccountUpsert {
+	u.Set(account.FieldRoutingLabels, v)
+	return u
+}
+
+// UpdateRoutingLabels sets the "routing_labels" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateRoutingLabels() *AccountUpsert {
+	u.SetExcluded(account.FieldRoutingLabels)
+	return u
+}
+
+// SetPriceBookID sets the "price_book_id" field.
+func (u *AccountUpsert) SetPriceBookID(v int64) *AccountUpsert {
+	u.Set(account.FieldPriceBookID, v)
+	return u
+}
+
+// UpdatePriceBookID sets the "price_book_id" field to the value that was provided on create.
+func (u *AccountUpsert) UpdatePriceBookID() *AccountUpsert {
+	u.SetExcluded(account.FieldPriceBookID)
+	return u
+}
+
+// AddPriceBookID adds v to the "price_book_id" field.
+func (u *AccountUpsert) AddPriceBookID(v int64) *AccountUpsert {
+	u.Add(account.FieldPriceBookID, v)
+	return u
+}
+
+// ClearPriceBookID clears the value of the "price_book_id" field.
+func (u *AccountUpsert) ClearPriceBookID() *AccountUpsert {
+	u.SetNull(account.FieldPriceBookID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -2047,6 +2203,90 @@ func (u *AccountUpsertOne) SetQuotaDimension(v account.QuotaDimension) *AccountU
 func (u *AccountUpsertOne) UpdateQuotaDimension() *AccountUpsertOne {
 	return u.Update(func(s *AccountUpsert) {
 		s.UpdateQuotaDimension()
+	})
+}
+
+// SetFailureDomain sets the "failure_domain" field.
+func (u *AccountUpsertOne) SetFailureDomain(v string) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetFailureDomain(v)
+	})
+}
+
+// UpdateFailureDomain sets the "failure_domain" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateFailureDomain() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateFailureDomain()
+	})
+}
+
+// ClearFailureDomain clears the value of the "failure_domain" field.
+func (u *AccountUpsertOne) ClearFailureDomain() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearFailureDomain()
+	})
+}
+
+// SetReliabilityClass sets the "reliability_class" field.
+func (u *AccountUpsertOne) SetReliabilityClass(v string) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetReliabilityClass(v)
+	})
+}
+
+// UpdateReliabilityClass sets the "reliability_class" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateReliabilityClass() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateReliabilityClass()
+	})
+}
+
+// ClearReliabilityClass clears the value of the "reliability_class" field.
+func (u *AccountUpsertOne) ClearReliabilityClass() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearReliabilityClass()
+	})
+}
+
+// SetRoutingLabels sets the "routing_labels" field.
+func (u *AccountUpsertOne) SetRoutingLabels(v map[string]string) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetRoutingLabels(v)
+	})
+}
+
+// UpdateRoutingLabels sets the "routing_labels" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateRoutingLabels() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateRoutingLabels()
+	})
+}
+
+// SetPriceBookID sets the "price_book_id" field.
+func (u *AccountUpsertOne) SetPriceBookID(v int64) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetPriceBookID(v)
+	})
+}
+
+// AddPriceBookID adds v to the "price_book_id" field.
+func (u *AccountUpsertOne) AddPriceBookID(v int64) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.AddPriceBookID(v)
+	})
+}
+
+// UpdatePriceBookID sets the "price_book_id" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdatePriceBookID() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdatePriceBookID()
+	})
+}
+
+// ClearPriceBookID clears the value of the "price_book_id" field.
+func (u *AccountUpsertOne) ClearPriceBookID() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearPriceBookID()
 	})
 }
 
@@ -2832,6 +3072,90 @@ func (u *AccountUpsertBulk) SetQuotaDimension(v account.QuotaDimension) *Account
 func (u *AccountUpsertBulk) UpdateQuotaDimension() *AccountUpsertBulk {
 	return u.Update(func(s *AccountUpsert) {
 		s.UpdateQuotaDimension()
+	})
+}
+
+// SetFailureDomain sets the "failure_domain" field.
+func (u *AccountUpsertBulk) SetFailureDomain(v string) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetFailureDomain(v)
+	})
+}
+
+// UpdateFailureDomain sets the "failure_domain" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateFailureDomain() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateFailureDomain()
+	})
+}
+
+// ClearFailureDomain clears the value of the "failure_domain" field.
+func (u *AccountUpsertBulk) ClearFailureDomain() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearFailureDomain()
+	})
+}
+
+// SetReliabilityClass sets the "reliability_class" field.
+func (u *AccountUpsertBulk) SetReliabilityClass(v string) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetReliabilityClass(v)
+	})
+}
+
+// UpdateReliabilityClass sets the "reliability_class" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateReliabilityClass() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateReliabilityClass()
+	})
+}
+
+// ClearReliabilityClass clears the value of the "reliability_class" field.
+func (u *AccountUpsertBulk) ClearReliabilityClass() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearReliabilityClass()
+	})
+}
+
+// SetRoutingLabels sets the "routing_labels" field.
+func (u *AccountUpsertBulk) SetRoutingLabels(v map[string]string) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetRoutingLabels(v)
+	})
+}
+
+// UpdateRoutingLabels sets the "routing_labels" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateRoutingLabels() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateRoutingLabels()
+	})
+}
+
+// SetPriceBookID sets the "price_book_id" field.
+func (u *AccountUpsertBulk) SetPriceBookID(v int64) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetPriceBookID(v)
+	})
+}
+
+// AddPriceBookID adds v to the "price_book_id" field.
+func (u *AccountUpsertBulk) AddPriceBookID(v int64) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.AddPriceBookID(v)
+	})
+}
+
+// UpdatePriceBookID sets the "price_book_id" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdatePriceBookID() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdatePriceBookID()
+	})
+}
+
+// ClearPriceBookID clears the value of the "price_book_id" field.
+func (u *AccountUpsertBulk) ClearPriceBookID() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearPriceBookID()
 	})
 }
 

@@ -80,3 +80,11 @@ describe.each(Object.keys(roots))('locale %s spread assembly', (locale) => {
     expect(collisions(admins[locale])).toEqual([])
   })
 })
+
+it('defines the ChatGPT iOS refresh-token label for OpenAI authorization', () => {
+  const zhOpenAI = zhAdminAccounts.accounts.oauth.openai as Record<string, unknown>
+  const enOpenAI = enAdminAccounts.accounts.oauth.openai as Record<string, unknown>
+
+  expect(zhOpenAI.mobileRefreshTokenAuth).toBe('ChatGPT iOS RT')
+  expect(enOpenAI.mobileRefreshTokenAuth).toBe('ChatGPT iOS RT')
+})

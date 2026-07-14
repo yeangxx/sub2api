@@ -517,10 +517,12 @@ type AccountWaitPlan struct {
 }
 
 type AccountSelectionResult struct {
-	Account     *Account
-	Acquired    bool
-	ReleaseFunc func()
-	WaitPlan    *AccountWaitPlan // nil means no wait allowed
+	Account            *Account
+	Acquired           bool
+	ReleaseFunc        func()
+	WaitPlan           *AccountWaitPlan // nil means no wait allowed
+	RoutingMappedModel string
+	RoutingPolicy      *EffectiveRoutingPolicy
 }
 
 // ClaudeUsage 表示Claude API返回的usage信息
@@ -635,6 +637,7 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	routingPolicyRuntime  *RoutingPolicyRuntime
 }
 
 // NewGatewayService creates a new GatewayService

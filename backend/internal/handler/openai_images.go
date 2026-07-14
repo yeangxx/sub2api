@@ -61,6 +61,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
+	c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 
 	if isMultipartImagesContentType(c.GetHeader("Content-Type")) {
 		setOpsRequestContext(c, "", false)
@@ -138,6 +139,9 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 	requestCtx := service.WithOpenAIImageGenerationIntent(c.Request.Context())
 
 	maxAccountSwitches := h.maxAccountSwitches
+	if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(requestCtx, apiKey.GroupID, maxAccountSwitches); ok {
+		maxAccountSwitches = limit
+	}
 	switchCount := 0
 	failedAccountIDs := make(map[int64]struct{})
 	sameAccountRetryCount := make(map[int64]int)
@@ -212,13 +216,20 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
 		writerSizeBeforeForward := c.Writer.Size()
+		mappedModel := channelMapping.MappedModel
+		if policyMapped := strings.TrimSpace(selection.RoutingMappedModel); policyMapped != "" {
+			mappedModel = policyMapped
+		}
+		attemptCtx, finishRoutingAttempt := beginRoutingAttempt(c, selection, parsed.Stream)
+		attemptCtx = service.WithOpenAIImageGenerationIntent(attemptCtx)
 		result, err := func() (*service.OpenAIForwardResult, error) {
+			defer finishRoutingAttempt()
 			defer func() {
 				if accountReleaseFunc != nil {
 					accountReleaseFunc()
 				}
 			}()
-			return h.gatewayService.ForwardImages(requestCtx, c, account, body, parsed, channelMapping.MappedModel)
+			return h.gatewayService.ForwardImages(attemptCtx, c, account, body, parsed, mappedModel)
 		}()
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		upstreamLatencyMs, _ := getContextInt64(c, service.OpsUpstreamLatencyMsKey)
@@ -241,7 +252,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 				var imageUpstreamErr *service.OpenAIImagesUpstreamError
 				if errors.As(err, &imageUpstreamErr) {
 					retryableServerError := service.IsOpenAIImagesRetryableUpstreamError(imageUpstreamErr)
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, !retryableServerError, nil)
+					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, !retryableServerError, nil)
 					logEvent := "openai.images.upstream_user_error"
 					if retryableServerError {
 						logEvent = "openai.images.upstream_server_error_after_flush"
@@ -256,8 +267,8 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 					return
 				}
 				var failoverErr *service.UpstreamFailoverError
-				if errors.As(err, &failoverErr) {
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+				if errors.As(err, &failoverErr) && h.gatewayService.RoutingErrorRetryable(requestCtx, apiKey.GroupID, err) {
+					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
 					if c.Writer.Size() != writerSizeBeforeForward {
 						reqLog.Warn("openai.images.upstream_failover_skipped_after_flush",
 							zap.Int64("account_id", account.ID),
@@ -304,7 +315,15 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 					)
 					continue
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+				if h.gatewayService.RoutingTransportErrorRetryable(requestCtx, apiKey.GroupID, err) &&
+					c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
+					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
+					h.gatewayService.RecordOpenAIAccountSwitch()
+					failedAccountIDs[account.ID] = struct{}{}
+					switchCount++
+					continue
+				}
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
 				upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
 				wroteFallback := false
 				if !upstreamErrorAlreadyCommunicated {
@@ -329,9 +348,9 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 			if account.Type == service.AccountTypeOAuth && !account.IsShadow() {
 				h.gatewayService.UpdateCodexUsageSnapshotFromHeaders(c.Request.Context(), account.ID, result.ResponseHeaders)
 			}
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, true, result.FirstTokenMs)
 		} else {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, true, nil)
 		}
 
 		userAgent := c.GetHeader("User-Agent")

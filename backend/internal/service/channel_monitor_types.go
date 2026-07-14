@@ -42,6 +42,7 @@ type ChannelMonitor struct {
 	JitterSeconds   int // 每次调度 ± [0, jitter] 的随机偏移（秒），0 = 固定间隔
 	LastCheckedAt   *time.Time
 	CreatedBy       int64
+	AccountID       *int64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 
@@ -79,6 +80,7 @@ type ChannelMonitorCreateParams struct {
 	IntervalSeconds  int
 	JitterSeconds    int
 	CreatedBy        int64
+	AccountID        *int64
 	TemplateID       *int64
 	ExtraHeaders     map[string]string
 	BodyOverrideMode string
@@ -95,6 +97,8 @@ type ChannelMonitorUpdateParams struct {
 	PrimaryModel    *string
 	ExtraModels     *[]string
 	GroupName       *string
+	AccountID       *int64
+	ClearAccountID  bool
 	Enabled         *bool
 	IntervalSeconds *int
 	JitterSeconds   *int

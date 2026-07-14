@@ -564,6 +564,79 @@ func (_u *AccountUpdate) SetNillableQuotaDimension(v *account.QuotaDimension) *A
 	return _u
 }
 
+// SetFailureDomain sets the "failure_domain" field.
+func (_u *AccountUpdate) SetFailureDomain(v string) *AccountUpdate {
+	_u.mutation.SetFailureDomain(v)
+	return _u
+}
+
+// SetNillableFailureDomain sets the "failure_domain" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillableFailureDomain(v *string) *AccountUpdate {
+	if v != nil {
+		_u.SetFailureDomain(*v)
+	}
+	return _u
+}
+
+// ClearFailureDomain clears the value of the "failure_domain" field.
+func (_u *AccountUpdate) ClearFailureDomain() *AccountUpdate {
+	_u.mutation.ClearFailureDomain()
+	return _u
+}
+
+// SetReliabilityClass sets the "reliability_class" field.
+func (_u *AccountUpdate) SetReliabilityClass(v string) *AccountUpdate {
+	_u.mutation.SetReliabilityClass(v)
+	return _u
+}
+
+// SetNillableReliabilityClass sets the "reliability_class" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillableReliabilityClass(v *string) *AccountUpdate {
+	if v != nil {
+		_u.SetReliabilityClass(*v)
+	}
+	return _u
+}
+
+// ClearReliabilityClass clears the value of the "reliability_class" field.
+func (_u *AccountUpdate) ClearReliabilityClass() *AccountUpdate {
+	_u.mutation.ClearReliabilityClass()
+	return _u
+}
+
+// SetRoutingLabels sets the "routing_labels" field.
+func (_u *AccountUpdate) SetRoutingLabels(v map[string]string) *AccountUpdate {
+	_u.mutation.SetRoutingLabels(v)
+	return _u
+}
+
+// SetPriceBookID sets the "price_book_id" field.
+func (_u *AccountUpdate) SetPriceBookID(v int64) *AccountUpdate {
+	_u.mutation.ResetPriceBookID()
+	_u.mutation.SetPriceBookID(v)
+	return _u
+}
+
+// SetNillablePriceBookID sets the "price_book_id" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillablePriceBookID(v *int64) *AccountUpdate {
+	if v != nil {
+		_u.SetPriceBookID(*v)
+	}
+	return _u
+}
+
+// AddPriceBookID adds value to the "price_book_id" field.
+func (_u *AccountUpdate) AddPriceBookID(v int64) *AccountUpdate {
+	_u.mutation.AddPriceBookID(v)
+	return _u
+}
+
+// ClearPriceBookID clears the value of the "price_book_id" field.
+func (_u *AccountUpdate) ClearPriceBookID() *AccountUpdate {
+	_u.mutation.ClearPriceBookID()
+	return _u
+}
+
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (_u *AccountUpdate) AddGroupIDs(ids ...int64) *AccountUpdate {
 	_u.mutation.AddGroupIDs(ids...)
@@ -787,6 +860,16 @@ func (_u *AccountUpdate) check() error {
 			return &ValidationError{Name: "quota_dimension", err: fmt.Errorf(`ent: validator failed for field "Account.quota_dimension": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FailureDomain(); ok {
+		if err := account.FailureDomainValidator(v); err != nil {
+			return &ValidationError{Name: "failure_domain", err: fmt.Errorf(`ent: validator failed for field "Account.failure_domain": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ReliabilityClass(); ok {
+		if err := account.ReliabilityClassValidator(v); err != nil {
+			return &ValidationError{Name: "reliability_class", err: fmt.Errorf(`ent: validator failed for field "Account.reliability_class": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -945,6 +1028,30 @@ func (_u *AccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.QuotaDimension(); ok {
 		_spec.SetField(account.FieldQuotaDimension, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.FailureDomain(); ok {
+		_spec.SetField(account.FieldFailureDomain, field.TypeString, value)
+	}
+	if _u.mutation.FailureDomainCleared() {
+		_spec.ClearField(account.FieldFailureDomain, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReliabilityClass(); ok {
+		_spec.SetField(account.FieldReliabilityClass, field.TypeString, value)
+	}
+	if _u.mutation.ReliabilityClassCleared() {
+		_spec.ClearField(account.FieldReliabilityClass, field.TypeString)
+	}
+	if value, ok := _u.mutation.RoutingLabels(); ok {
+		_spec.SetField(account.FieldRoutingLabels, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.PriceBookID(); ok {
+		_spec.SetField(account.FieldPriceBookID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedPriceBookID(); ok {
+		_spec.AddField(account.FieldPriceBookID, field.TypeInt64, value)
+	}
+	if _u.mutation.PriceBookIDCleared() {
+		_spec.ClearField(account.FieldPriceBookID, field.TypeInt64)
 	}
 	if _u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1704,6 +1811,79 @@ func (_u *AccountUpdateOne) SetNillableQuotaDimension(v *account.QuotaDimension)
 	return _u
 }
 
+// SetFailureDomain sets the "failure_domain" field.
+func (_u *AccountUpdateOne) SetFailureDomain(v string) *AccountUpdateOne {
+	_u.mutation.SetFailureDomain(v)
+	return _u
+}
+
+// SetNillableFailureDomain sets the "failure_domain" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillableFailureDomain(v *string) *AccountUpdateOne {
+	if v != nil {
+		_u.SetFailureDomain(*v)
+	}
+	return _u
+}
+
+// ClearFailureDomain clears the value of the "failure_domain" field.
+func (_u *AccountUpdateOne) ClearFailureDomain() *AccountUpdateOne {
+	_u.mutation.ClearFailureDomain()
+	return _u
+}
+
+// SetReliabilityClass sets the "reliability_class" field.
+func (_u *AccountUpdateOne) SetReliabilityClass(v string) *AccountUpdateOne {
+	_u.mutation.SetReliabilityClass(v)
+	return _u
+}
+
+// SetNillableReliabilityClass sets the "reliability_class" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillableReliabilityClass(v *string) *AccountUpdateOne {
+	if v != nil {
+		_u.SetReliabilityClass(*v)
+	}
+	return _u
+}
+
+// ClearReliabilityClass clears the value of the "reliability_class" field.
+func (_u *AccountUpdateOne) ClearReliabilityClass() *AccountUpdateOne {
+	_u.mutation.ClearReliabilityClass()
+	return _u
+}
+
+// SetRoutingLabels sets the "routing_labels" field.
+func (_u *AccountUpdateOne) SetRoutingLabels(v map[string]string) *AccountUpdateOne {
+	_u.mutation.SetRoutingLabels(v)
+	return _u
+}
+
+// SetPriceBookID sets the "price_book_id" field.
+func (_u *AccountUpdateOne) SetPriceBookID(v int64) *AccountUpdateOne {
+	_u.mutation.ResetPriceBookID()
+	_u.mutation.SetPriceBookID(v)
+	return _u
+}
+
+// SetNillablePriceBookID sets the "price_book_id" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillablePriceBookID(v *int64) *AccountUpdateOne {
+	if v != nil {
+		_u.SetPriceBookID(*v)
+	}
+	return _u
+}
+
+// AddPriceBookID adds value to the "price_book_id" field.
+func (_u *AccountUpdateOne) AddPriceBookID(v int64) *AccountUpdateOne {
+	_u.mutation.AddPriceBookID(v)
+	return _u
+}
+
+// ClearPriceBookID clears the value of the "price_book_id" field.
+func (_u *AccountUpdateOne) ClearPriceBookID() *AccountUpdateOne {
+	_u.mutation.ClearPriceBookID()
+	return _u
+}
+
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (_u *AccountUpdateOne) AddGroupIDs(ids ...int64) *AccountUpdateOne {
 	_u.mutation.AddGroupIDs(ids...)
@@ -1940,6 +2120,16 @@ func (_u *AccountUpdateOne) check() error {
 			return &ValidationError{Name: "quota_dimension", err: fmt.Errorf(`ent: validator failed for field "Account.quota_dimension": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FailureDomain(); ok {
+		if err := account.FailureDomainValidator(v); err != nil {
+			return &ValidationError{Name: "failure_domain", err: fmt.Errorf(`ent: validator failed for field "Account.failure_domain": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ReliabilityClass(); ok {
+		if err := account.ReliabilityClassValidator(v); err != nil {
+			return &ValidationError{Name: "reliability_class", err: fmt.Errorf(`ent: validator failed for field "Account.reliability_class": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -2115,6 +2305,30 @@ func (_u *AccountUpdateOne) sqlSave(ctx context.Context) (_node *Account, err er
 	}
 	if value, ok := _u.mutation.QuotaDimension(); ok {
 		_spec.SetField(account.FieldQuotaDimension, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.FailureDomain(); ok {
+		_spec.SetField(account.FieldFailureDomain, field.TypeString, value)
+	}
+	if _u.mutation.FailureDomainCleared() {
+		_spec.ClearField(account.FieldFailureDomain, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReliabilityClass(); ok {
+		_spec.SetField(account.FieldReliabilityClass, field.TypeString, value)
+	}
+	if _u.mutation.ReliabilityClassCleared() {
+		_spec.ClearField(account.FieldReliabilityClass, field.TypeString)
+	}
+	if value, ok := _u.mutation.RoutingLabels(); ok {
+		_spec.SetField(account.FieldRoutingLabels, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.PriceBookID(); ok {
+		_spec.SetField(account.FieldPriceBookID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedPriceBookID(); ok {
+		_spec.AddField(account.FieldPriceBookID, field.TypeInt64, value)
+	}
+	if _u.mutation.PriceBookIDCleared() {
+		_spec.ClearField(account.FieldPriceBookID, field.TypeInt64)
 	}
 	if _u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{

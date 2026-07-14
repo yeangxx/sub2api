@@ -195,6 +195,21 @@ func ParentAccountID(v int64) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldParentAccountID, v))
 }
 
+// FailureDomain applies equality check predicate on the "failure_domain" field. It's identical to FailureDomainEQ.
+func FailureDomain(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldFailureDomain, v))
+}
+
+// ReliabilityClass applies equality check predicate on the "reliability_class" field. It's identical to ReliabilityClassEQ.
+func ReliabilityClass(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldReliabilityClass, v))
+}
+
+// PriceBookID applies equality check predicate on the "price_book_id" field. It's identical to PriceBookIDEQ.
+func PriceBookID(v int64) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldPriceBookID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldCreatedAt, v))
@@ -1603,6 +1618,206 @@ func QuotaDimensionIn(vs ...QuotaDimension) predicate.Account {
 // QuotaDimensionNotIn applies the NotIn predicate on the "quota_dimension" field.
 func QuotaDimensionNotIn(vs ...QuotaDimension) predicate.Account {
 	return predicate.Account(sql.FieldNotIn(FieldQuotaDimension, vs...))
+}
+
+// FailureDomainEQ applies the EQ predicate on the "failure_domain" field.
+func FailureDomainEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldFailureDomain, v))
+}
+
+// FailureDomainNEQ applies the NEQ predicate on the "failure_domain" field.
+func FailureDomainNEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldFailureDomain, v))
+}
+
+// FailureDomainIn applies the In predicate on the "failure_domain" field.
+func FailureDomainIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldFailureDomain, vs...))
+}
+
+// FailureDomainNotIn applies the NotIn predicate on the "failure_domain" field.
+func FailureDomainNotIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldFailureDomain, vs...))
+}
+
+// FailureDomainGT applies the GT predicate on the "failure_domain" field.
+func FailureDomainGT(v string) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldFailureDomain, v))
+}
+
+// FailureDomainGTE applies the GTE predicate on the "failure_domain" field.
+func FailureDomainGTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldFailureDomain, v))
+}
+
+// FailureDomainLT applies the LT predicate on the "failure_domain" field.
+func FailureDomainLT(v string) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldFailureDomain, v))
+}
+
+// FailureDomainLTE applies the LTE predicate on the "failure_domain" field.
+func FailureDomainLTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldFailureDomain, v))
+}
+
+// FailureDomainContains applies the Contains predicate on the "failure_domain" field.
+func FailureDomainContains(v string) predicate.Account {
+	return predicate.Account(sql.FieldContains(FieldFailureDomain, v))
+}
+
+// FailureDomainHasPrefix applies the HasPrefix predicate on the "failure_domain" field.
+func FailureDomainHasPrefix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasPrefix(FieldFailureDomain, v))
+}
+
+// FailureDomainHasSuffix applies the HasSuffix predicate on the "failure_domain" field.
+func FailureDomainHasSuffix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasSuffix(FieldFailureDomain, v))
+}
+
+// FailureDomainIsNil applies the IsNil predicate on the "failure_domain" field.
+func FailureDomainIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldFailureDomain))
+}
+
+// FailureDomainNotNil applies the NotNil predicate on the "failure_domain" field.
+func FailureDomainNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldFailureDomain))
+}
+
+// FailureDomainEqualFold applies the EqualFold predicate on the "failure_domain" field.
+func FailureDomainEqualFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldEqualFold(FieldFailureDomain, v))
+}
+
+// FailureDomainContainsFold applies the ContainsFold predicate on the "failure_domain" field.
+func FailureDomainContainsFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldContainsFold(FieldFailureDomain, v))
+}
+
+// ReliabilityClassEQ applies the EQ predicate on the "reliability_class" field.
+func ReliabilityClassEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassNEQ applies the NEQ predicate on the "reliability_class" field.
+func ReliabilityClassNEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassIn applies the In predicate on the "reliability_class" field.
+func ReliabilityClassIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldReliabilityClass, vs...))
+}
+
+// ReliabilityClassNotIn applies the NotIn predicate on the "reliability_class" field.
+func ReliabilityClassNotIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldReliabilityClass, vs...))
+}
+
+// ReliabilityClassGT applies the GT predicate on the "reliability_class" field.
+func ReliabilityClassGT(v string) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassGTE applies the GTE predicate on the "reliability_class" field.
+func ReliabilityClassGTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassLT applies the LT predicate on the "reliability_class" field.
+func ReliabilityClassLT(v string) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassLTE applies the LTE predicate on the "reliability_class" field.
+func ReliabilityClassLTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassContains applies the Contains predicate on the "reliability_class" field.
+func ReliabilityClassContains(v string) predicate.Account {
+	return predicate.Account(sql.FieldContains(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassHasPrefix applies the HasPrefix predicate on the "reliability_class" field.
+func ReliabilityClassHasPrefix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasPrefix(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassHasSuffix applies the HasSuffix predicate on the "reliability_class" field.
+func ReliabilityClassHasSuffix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasSuffix(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassIsNil applies the IsNil predicate on the "reliability_class" field.
+func ReliabilityClassIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldReliabilityClass))
+}
+
+// ReliabilityClassNotNil applies the NotNil predicate on the "reliability_class" field.
+func ReliabilityClassNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldReliabilityClass))
+}
+
+// ReliabilityClassEqualFold applies the EqualFold predicate on the "reliability_class" field.
+func ReliabilityClassEqualFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldEqualFold(FieldReliabilityClass, v))
+}
+
+// ReliabilityClassContainsFold applies the ContainsFold predicate on the "reliability_class" field.
+func ReliabilityClassContainsFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldContainsFold(FieldReliabilityClass, v))
+}
+
+// PriceBookIDEQ applies the EQ predicate on the "price_book_id" field.
+func PriceBookIDEQ(v int64) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldPriceBookID, v))
+}
+
+// PriceBookIDNEQ applies the NEQ predicate on the "price_book_id" field.
+func PriceBookIDNEQ(v int64) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldPriceBookID, v))
+}
+
+// PriceBookIDIn applies the In predicate on the "price_book_id" field.
+func PriceBookIDIn(vs ...int64) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldPriceBookID, vs...))
+}
+
+// PriceBookIDNotIn applies the NotIn predicate on the "price_book_id" field.
+func PriceBookIDNotIn(vs ...int64) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldPriceBookID, vs...))
+}
+
+// PriceBookIDGT applies the GT predicate on the "price_book_id" field.
+func PriceBookIDGT(v int64) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldPriceBookID, v))
+}
+
+// PriceBookIDGTE applies the GTE predicate on the "price_book_id" field.
+func PriceBookIDGTE(v int64) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldPriceBookID, v))
+}
+
+// PriceBookIDLT applies the LT predicate on the "price_book_id" field.
+func PriceBookIDLT(v int64) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldPriceBookID, v))
+}
+
+// PriceBookIDLTE applies the LTE predicate on the "price_book_id" field.
+func PriceBookIDLTE(v int64) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldPriceBookID, v))
+}
+
+// PriceBookIDIsNil applies the IsNil predicate on the "price_book_id" field.
+func PriceBookIDIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldPriceBookID))
+}
+
+// PriceBookIDNotNil applies the NotNil predicate on the "price_book_id" field.
+func PriceBookIDNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldPriceBookID))
 }
 
 // HasGroups applies the HasEdge predicate on the "groups" edge.

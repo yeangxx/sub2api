@@ -98,17 +98,21 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 	}
 
 	account := &Account{
-		Name:        input.Name,
-		Notes:       normalizeAccountNotes(input.Notes),
-		Platform:    input.Platform,
-		Type:        input.Type,
-		Credentials: input.Credentials,
-		Extra:       input.Extra,
-		ProxyID:     input.ProxyID,
-		Concurrency: normalizeAccountConcurrency(input.Platform, input.Type, input.Concurrency),
-		Priority:    input.Priority,
-		Status:      StatusActive,
-		Schedulable: true,
+		Name:             input.Name,
+		Notes:            normalizeAccountNotes(input.Notes),
+		Platform:         input.Platform,
+		Type:             input.Type,
+		Credentials:      input.Credentials,
+		Extra:            input.Extra,
+		ProxyID:          input.ProxyID,
+		Concurrency:      normalizeAccountConcurrency(input.Platform, input.Type, input.Concurrency),
+		Priority:         input.Priority,
+		Status:           StatusActive,
+		Schedulable:      true,
+		FailureDomain:    strings.TrimSpace(input.FailureDomain),
+		ReliabilityClass: strings.TrimSpace(input.ReliabilityClass),
+		RoutingLabels:    cloneRoutingLabels(input.RoutingLabels),
+		PriceBookID:      input.PriceBookID,
 	}
 	// 预计算固定时间重置的下次重置时间
 	if account.Extra != nil {
@@ -307,6 +311,22 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	}
 	if input.AutoPauseOnExpired != nil {
 		account.AutoPauseOnExpired = *input.AutoPauseOnExpired
+	}
+	if input.FailureDomain != nil {
+		account.FailureDomain = strings.TrimSpace(*input.FailureDomain)
+	}
+	if input.ReliabilityClass != nil {
+		account.ReliabilityClass = strings.TrimSpace(*input.ReliabilityClass)
+	}
+	if input.RoutingLabels != nil {
+		account.RoutingLabels = cloneRoutingLabels(*input.RoutingLabels)
+	}
+	if input.PriceBookID != nil {
+		if *input.PriceBookID <= 0 {
+			account.PriceBookID = nil
+		} else {
+			account.PriceBookID = input.PriceBookID
+		}
 	}
 
 	// 先验证分组是否存在（在任何写操作之前）
