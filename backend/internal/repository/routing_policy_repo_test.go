@@ -77,3 +77,28 @@ func TestRoutingPolicyRepositoryResolvesPreviouslyPublishedPinnedRevision(t *tes
 		t.Fatalf("unmet SQL expectations: %v", err)
 	}
 }
+
+func TestPriceBookRepositoryGetsLatestEffectiveRevisionFromActiveBook(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New() error = %v", err)
+	}
+	defer db.Close()
+
+	now := time.Now().UTC()
+	mock.ExpectQuery(`FROM upstream_price_book_revisions r\s+JOIN upstream_price_books b ON b.id = r.price_book_id\s+WHERE r.price_book_id = \$1\s+AND b.status = 'active'\s+AND r.state IN \('published', 'archived'\)\s+AND r.published_at IS NOT NULL\s+AND \(r.effective_at IS NULL OR r.effective_at <= NOW\(\)\)`).
+		WithArgs(int64(3)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "price_book_id", "version", "state", "effective_at", "source_snapshot", "comment", "created_by", "created_at", "published_at"}).
+			AddRow(int64(7), int64(3), 1, service.RoutingPolicyRevisionArchived, nil, []byte(`{}`), "", nil, now, now))
+
+	revision, err := (&priceBookRepository{db: db}).GetPublishedRevision(context.Background(), 3)
+	if err != nil {
+		t.Fatalf("GetPublishedRevision() error = %v", err)
+	}
+	if revision.ID != 7 || revision.State != service.RoutingPolicyRevisionArchived {
+		t.Fatalf("revision = %#v, want archived effective revision 7", revision)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet SQL expectations: %v", err)
+	}
+}

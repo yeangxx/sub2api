@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,9 @@ func (r *RepositoryRoutingPriceResolver) Quote(ctx context.Context, account *Acc
 	bookID := *account.PriceBookID
 	prices, err := r.load(ctx, bookID)
 	if err != nil {
+		if errors.Is(err, ErrUpstreamPriceBookRevisionNotFound) {
+			return RoutingPriceQuote{}, false, nil
+		}
 		return RoutingPriceQuote{}, false, err
 	}
 	price, ok := matchUpstreamModelPrice(prices, model)

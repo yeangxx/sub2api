@@ -745,11 +745,16 @@ func (r *priceBookRepository) GetPublishedRevision(ctx context.Context, bookID i
 	var effectiveAt, publishedAt sql.NullTime
 	var createdBy sql.NullInt64
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, price_book_id, version, state, effective_at, source_snapshot,
-		       comment, created_by, created_at, published_at
-		FROM upstream_price_book_revisions
-		WHERE price_book_id = $1 AND state = 'published'
-		ORDER BY version DESC LIMIT 1`, bookID).Scan(
+		SELECT r.id, r.price_book_id, r.version, r.state, r.effective_at, r.source_snapshot,
+		       r.comment, r.created_by, r.created_at, r.published_at
+		FROM upstream_price_book_revisions r
+		JOIN upstream_price_books b ON b.id = r.price_book_id
+		WHERE r.price_book_id = $1
+		  AND b.status = 'active'
+		  AND r.state IN ('published', 'archived')
+		  AND r.published_at IS NOT NULL
+		  AND (r.effective_at IS NULL OR r.effective_at <= NOW())
+		ORDER BY r.published_at DESC, r.id DESC LIMIT 1`, bookID).Scan(
 		&rev.ID, &rev.PriceBookID, &rev.Version, &rev.State, &effectiveAt, &raw,
 		&rev.Comment, &createdBy, &rev.CreatedAt, &publishedAt)
 	if errors.Is(err, sql.ErrNoRows) {
