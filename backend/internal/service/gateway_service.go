@@ -523,6 +523,7 @@ type AccountSelectionResult struct {
 	WaitPlan           *AccountWaitPlan // nil means no wait allowed
 	RoutingMappedModel string
 	RoutingPolicy      *EffectiveRoutingPolicy
+	RoutingRequest     *RoutingRequestDescriptor
 }
 
 // ClaudeUsage 表示Claude API返回的usage信息

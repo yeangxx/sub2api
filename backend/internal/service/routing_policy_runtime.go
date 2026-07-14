@@ -596,11 +596,27 @@ func resolveRoutingModel(mappings map[string]string, requested string) string {
 	if mapped := strings.TrimSpace(mappings[requested]); mapped != "" {
 		return mapped
 	}
-	for pattern, mapped := range mappings {
-		prefix := strings.TrimSuffix(strings.TrimSpace(pattern), "*")
-		if strings.HasSuffix(strings.TrimSpace(pattern), "*") && strings.HasPrefix(requested, prefix) && strings.TrimSpace(mapped) != "" {
-			return strings.TrimSpace(mapped)
+	matchedPattern := ""
+	matchedModel := ""
+	matchedPrefixLen := -1
+	for rawPattern, rawMapped := range mappings {
+		pattern := strings.TrimSpace(rawPattern)
+		mapped := strings.TrimSpace(rawMapped)
+		if !strings.HasSuffix(pattern, "*") || mapped == "" {
+			continue
 		}
+		prefix := strings.TrimSuffix(pattern, "*")
+		if !strings.HasPrefix(requested, prefix) {
+			continue
+		}
+		if len(prefix) > matchedPrefixLen || (len(prefix) == matchedPrefixLen && (matchedPattern == "" || pattern < matchedPattern)) {
+			matchedPattern = pattern
+			matchedModel = mapped
+			matchedPrefixLen = len(prefix)
+		}
+	}
+	if matchedModel != "" {
+		return matchedModel
 	}
 	return requested
 }

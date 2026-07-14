@@ -263,7 +263,7 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) && h.gatewayService.RoutingErrorRetryable(requestCtx, apiKey.GroupID, err) {
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(requestCtx, selection, account.ID, requestModel, false, nil)
 				if c.Writer.Size() != writerSizeBeforeForward {
 					h.handleFailoverExhausted(c, failoverErr, true)
 					return
@@ -304,13 +304,13 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 			}
 			if h.gatewayService.RoutingTransportErrorRetryable(requestCtx, apiKey.GroupID, err) &&
 				c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(requestCtx, selection, account.ID, requestModel, false, nil)
 				h.gatewayService.RecordOpenAIAccountSwitch()
 				failedAccountIDs[account.ID] = struct{}{}
 				switchCount++
 				continue
 			}
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, false, nil)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(requestCtx, selection, account.ID, requestModel, false, nil)
 			if c.Writer.Size() == writerSizeBeforeForward {
 				h.errorResponse(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
 			}
@@ -321,7 +321,7 @@ func (h *OpenAIGatewayHandler) handleGrokMedia(c *gin.Context, endpoint service.
 			return
 		}
 
-		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, requestModel, true, nil)
+		h.gatewayService.ReportOpenAIAccountRoutingResult(requestCtx, selection, account.ID, requestModel, true, nil)
 		if endpoint.IsGenerationRequest() && strings.TrimSpace(result.ResponseID) != "" {
 			if err := h.gatewayService.BindGrokMediaVideoRequestAccount(requestCtx, apiKey.GroupID, result.ResponseID, account.ID); err != nil {
 				reqLog.Warn("grok_media.bind_video_request_account_failed",

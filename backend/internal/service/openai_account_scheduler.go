@@ -1706,7 +1706,7 @@ func (s *OpenAIGatewayService) selectAccountWithScheduler(
 	ctx = s.withOpenAIQuotaAutoPauseContext(ctx)
 	platform = normalizeOpenAICompatiblePlatform(platform)
 	decision := OpenAIAccountScheduleDecision{}
-	scheduler := s.getOpenAIAccountScheduler(ctx)
+	scheduler := s.getOpenAIAccountScheduler(context.Background())
 	if scheduler == nil {
 		decision.Layer = openAIAccountScheduleLayerLoadBalance
 		if requiredTransport == OpenAIUpstreamTransportAny || requiredTransport == OpenAIUpstreamTransportHTTPSSE {
@@ -1842,6 +1842,10 @@ func (s *OpenAIGatewayService) isOpenAIAccountTransportCompatible(account *Accou
 }
 
 func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64, model string, success bool, firstTokenMs *int) {
+	s.ReportOpenAIAccountRoutingResult(context.Background(), nil, accountID, model, success, firstTokenMs)
+}
+
+func (s *OpenAIGatewayService) ReportOpenAIAccountRoutingResult(ctx context.Context, selection *AccountSelectionResult, accountID int64, model string, success bool, firstTokenMs *int) {
 	if s != nil && s.routingPolicyRuntime != nil {
 		model = strings.TrimSpace(model)
 		if model == "" {
@@ -1851,9 +1855,13 @@ func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64
 		if firstTokenMs != nil && *firstTokenMs > 0 {
 			ttft = time.Duration(*firstTokenMs) * time.Millisecond
 		}
-		s.routingPolicyRuntime.RecordUnscopedResult(context.Background(), accountID, model, "openai", success, ttft)
+		if selection != nil && selection.RoutingPolicy != nil && selection.RoutingRequest != nil {
+			s.routingPolicyRuntime.RecordResult(ctx, selection.RoutingPolicy, accountID, *selection.RoutingRequest, success, ttft)
+		} else {
+			s.routingPolicyRuntime.RecordUnscopedResult(ctx, accountID, model, "openai", success, ttft)
+		}
 	}
-	scheduler := s.getOpenAIAccountScheduler(context.Background())
+	scheduler := s.getOpenAIAccountScheduler(ctx)
 	if scheduler == nil {
 		return
 	}

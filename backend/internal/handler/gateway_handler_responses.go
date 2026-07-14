@@ -235,7 +235,7 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		if result != nil && result.FirstTokenMs != nil && *result.FirstTokenMs > 0 {
 			routingTTFT = time.Duration(*result.FirstTokenMs) * time.Millisecond
 		}
-		h.gatewayService.ReportRoutingResult(requestCtx, account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
+		h.gatewayService.ReportRoutingSelectionResult(requestCtx, selection, account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
 
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()

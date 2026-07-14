@@ -808,7 +808,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			if result != nil && result.FirstTokenMs != nil && *result.FirstTokenMs > 0 {
 				routingTTFT = time.Duration(*result.FirstTokenMs) * time.Millisecond
 			}
-			h.gatewayService.ReportRoutingResult(requestCtx, account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
+			h.gatewayService.ReportRoutingSelectionResult(requestCtx, selection, account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
 
 			// 兜底释放串行锁（正常情况已通过回调提前释放）
 			if queueRelease != nil {

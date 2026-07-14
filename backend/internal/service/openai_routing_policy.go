@@ -134,7 +134,8 @@ func (s *OpenAIGatewayService) selectWithRoutingPolicy(
 		}
 		return candidates
 	}
-	primaryCandidates := filterCandidates(accounts, requestedModel)
+	primaryModel := resolveRoutingModel(effective.Revision.Config.ModelMappings, requestedModel)
+	primaryCandidates := filterCandidates(accounts, primaryModel)
 	fallbackAccounts, fallbackModel, fallbackErr := routingFallbackAccounts(ctx, s.accountRepo, effective, *groupID, requestedModel, excluded)
 	if fallbackErr != nil {
 		if effective.Binding.Mode == RoutingPolicyModeShadow {
@@ -207,6 +208,7 @@ func (s *OpenAIGatewayService) selectWithRoutingPolicy(
 				}
 				selectionResult.RoutingMappedModel = selection.MappedModel
 				selectionResult.RoutingPolicy = effective
+				selectionResult.RoutingRequest = &routingRequest
 				return selectionResult, true, nil
 			}
 			workingExcluded[account.ID] = struct{}{}

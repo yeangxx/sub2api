@@ -59,6 +59,17 @@ func (s *GatewayService) ReportRoutingResult(ctx context.Context, accountID int6
 	s.routingPolicyRuntime.RecordUnscopedResult(ctx, accountID, model, endpoint, success, ttft)
 }
 
+func (s *GatewayService) ReportRoutingSelectionResult(ctx context.Context, selection *AccountSelectionResult, accountID int64, model, endpoint string, success bool, ttft time.Duration) {
+	if s == nil || s.routingPolicyRuntime == nil {
+		return
+	}
+	if selection != nil && selection.RoutingPolicy != nil && selection.RoutingRequest != nil {
+		s.routingPolicyRuntime.RecordResult(ctx, selection.RoutingPolicy, accountID, *selection.RoutingRequest, success, ttft)
+		return
+	}
+	s.ReportRoutingResult(ctx, accountID, model, endpoint, success, ttft)
+}
+
 // selectWithRoutingPolicy runs before the legacy selector. A missing binding
 // is deliberately reported as handled=false so existing groups preserve their
 // exact scheduling behavior.
@@ -114,7 +125,8 @@ func (s *GatewayService) selectWithRoutingPolicy(
 		}
 		return candidates
 	}
-	primaryCandidates := filterCandidates(accounts, requestedModel, true)
+	primaryModel := resolveRoutingModel(effective.Revision.Config.ModelMappings, requestedModel)
+	primaryCandidates := filterCandidates(accounts, primaryModel, true)
 	fallbackAccounts, fallbackModel, fallbackErr := routingFallbackAccounts(ctx, s.accountRepo, effective, *groupID, requestedModel, excluded)
 	if fallbackErr != nil {
 		if effective.Binding.Mode == RoutingPolicyModeShadow {
@@ -193,6 +205,7 @@ func (s *GatewayService) selectWithRoutingPolicy(
 				}
 				selectionResult.RoutingMappedModel = selection.MappedModel
 				selectionResult.RoutingPolicy = effective
+				selectionResult.RoutingRequest = &routingRequest
 				return selectionResult, true, nil
 			}
 			workingExcluded[account.ID] = struct{}{}

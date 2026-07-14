@@ -249,6 +249,127 @@ func TestRoutingPolicyRuntimeUsesMappedModelForPriceQuote(t *testing.T) {
 	}
 }
 
+func TestResolveRoutingModelPrefersMostSpecificWildcard(t *testing.T) {
+	mappings := map[string]string{
+		"gpt-*":  "generic-model",
+		"gpt-4*": "gpt-4-model",
+		"gpt-4o": "exact-model",
+	}
+
+	if got := resolveRoutingModel(mappings, "gpt-4o"); got != "exact-model" {
+		t.Fatalf("exact mapping = %q, want exact-model", got)
+	}
+	for i := 0; i < 100; i++ {
+		if got := resolveRoutingModel(mappings, "gpt-4.1"); got != "gpt-4-model" {
+			t.Fatalf("wildcard mapping at iteration %d = %q, want gpt-4-model", i, got)
+		}
+	}
+}
+
+func TestGatewayRoutingPolicyFiltersPrimaryCandidatesWithMappedModel(t *testing.T) {
+	config := testPolicyConfig()
+	config.ModelMappings = map[string]string{"client-alias": "target-model"}
+	effective := newTestEffectivePolicy(config)
+	runtime := NewRoutingPolicyRuntime(NewRoutingPolicyControlService(&effectiveRoutingPolicyRepoStub{effective: effective}, nil), nil, NewMemoryRoutingHealthStore())
+	groupID := int64(10)
+	account := testAccount(1, "standard")
+	account.Credentials = map[string]any{"model_mapping": map[string]any{"target-model": "target-model"}}
+
+	selection, handled, err := (&GatewayService{routingPolicyRuntime: runtime}).selectWithRoutingPolicy(
+		context.Background(), &groupID, &Group{}, PlatformOpenAI, false, "client-alias", "", nil, []Account{account},
+	)
+	if err != nil {
+		t.Fatalf("selectWithRoutingPolicy() error = %v", err)
+	}
+	if !handled || selection == nil || selection.Account == nil || selection.Account.ID != account.ID {
+		t.Fatalf("selection = %#v, handled = %v; want primary account", selection, handled)
+	}
+	if selection.RoutingMappedModel != "target-model" {
+		t.Fatalf("mapped model = %q, want target-model", selection.RoutingMappedModel)
+	}
+}
+
+func TestOpenAIRoutingPolicyFiltersPrimaryCandidatesWithMappedModel(t *testing.T) {
+	config := testPolicyConfig()
+	config.ModelMappings = map[string]string{"client-alias": "target-model"}
+	effective := newTestEffectivePolicy(config)
+	runtime := NewRoutingPolicyRuntime(NewRoutingPolicyControlService(&effectiveRoutingPolicyRepoStub{effective: effective}, nil), nil, NewMemoryRoutingHealthStore())
+	groupID := int64(10)
+	account := testAccount(1, "standard")
+	account.Credentials = map[string]any{"model_mapping": map[string]any{"target-model": "target-model"}}
+
+	selection, handled, err := (&OpenAIGatewayService{routingPolicyRuntime: runtime}).selectWithRoutingPolicy(
+		context.Background(), &groupID, PlatformOpenAI, "client-alias", OpenAIEndpointCapabilityChatCompletions, false, false, "", nil, []Account{account},
+	)
+	if err != nil {
+		t.Fatalf("selectWithRoutingPolicy() error = %v", err)
+	}
+	if !handled || selection == nil || selection.Account == nil || selection.Account.ID != account.ID {
+		t.Fatalf("selection = %#v, handled = %v; want primary account", selection, handled)
+	}
+	if selection.RoutingMappedModel != "target-model" {
+		t.Fatalf("mapped model = %q, want target-model", selection.RoutingMappedModel)
+	}
+}
+
+func TestGatewayServiceReportsSelectionWithConfiguredCircuitBreaker(t *testing.T) {
+	config := testPolicyConfig()
+	config.CircuitBreaker.ConsecutiveFailures = 1
+	config.CircuitBreaker.CooldownMillis = 10_000
+	effective := newTestEffectivePolicy(config)
+	health := NewMemoryRoutingHealthStore()
+	svc := &GatewayService{routingPolicyRuntime: NewRoutingPolicyRuntime(nil, nil, health)}
+	selection := &AccountSelectionResult{
+		RoutingPolicy:  effective,
+		RoutingRequest: &RoutingRequestDescriptor{GroupID: 10, Model: "gpt-test", Endpoint: "gateway"},
+	}
+
+	svc.ReportRoutingSelectionResult(context.Background(), selection, 1, "gpt-test", "gateway", false, 0)
+	snapshot := health.Snapshot(context.Background(), 1, "gpt-test", "gateway")
+	if snapshot.CircuitState != "open" {
+		t.Fatalf("circuit state = %q, want open", snapshot.CircuitState)
+	}
+
+	runtime := NewRoutingPolicyRuntime(nil, nil, health)
+	result, err := runtime.Select(context.Background(), effective, []Account{testAccount(1, "standard")}, *selection.RoutingRequest, nil)
+	if err != ErrNoAvailableAccounts {
+		t.Fatalf("Select() error = %v, want ErrNoAvailableAccounts", err)
+	}
+	if len(result.Candidates) != 1 || result.Candidates[0].ExclusionReason != "circuit_open" {
+		t.Fatalf("candidates = %#v, want circuit_open exclusion", result.Candidates)
+	}
+}
+
+func TestGatewayServiceReportsLegacySelectionWithOriginalHealthKey(t *testing.T) {
+	health := NewMemoryRoutingHealthStore()
+	svc := &GatewayService{routingPolicyRuntime: NewRoutingPolicyRuntime(nil, nil, health)}
+
+	svc.ReportRoutingSelectionResult(context.Background(), nil, 1, "gpt-test", PlatformOpenAI, false, 0)
+	snapshot := health.Snapshot(context.Background(), 1, "gpt-test", PlatformOpenAI)
+	if snapshot.Samples != 1 || snapshot.ErrorRate == 0 {
+		t.Fatalf("legacy selection health = %#v, want one failed sample", snapshot)
+	}
+}
+
+func TestOpenAIGatewayServiceReportsSelectionWithConfiguredCircuitBreaker(t *testing.T) {
+	config := testPolicyConfig()
+	config.CircuitBreaker.ConsecutiveFailures = 1
+	config.CircuitBreaker.CooldownMillis = 10_000
+	effective := newTestEffectivePolicy(config)
+	health := NewMemoryRoutingHealthStore()
+	svc := &OpenAIGatewayService{routingPolicyRuntime: NewRoutingPolicyRuntime(nil, nil, health)}
+	selection := &AccountSelectionResult{
+		RoutingPolicy:  effective,
+		RoutingRequest: &RoutingRequestDescriptor{GroupID: 10, Model: "gpt-test", Endpoint: "openai"},
+	}
+
+	svc.ReportOpenAIAccountRoutingResult(context.Background(), selection, 1, "ignored-model", false, nil)
+	snapshot := health.Snapshot(context.Background(), 1, "gpt-test", "openai")
+	if snapshot.CircuitState != "open" {
+		t.Fatalf("circuit state = %q, want open", snapshot.CircuitState)
+	}
+}
+
 func TestRoutingPolicyRuntimeReservesHedgeCostInsideTotalBudget(t *testing.T) {
 	config := testPolicyConfig()
 	config.Hedge = RoutingHedgePolicy{Enabled: true, DelayMillis: 100, MaxConcurrent: 2}

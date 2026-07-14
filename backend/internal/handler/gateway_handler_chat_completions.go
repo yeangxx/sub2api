@@ -261,7 +261,7 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		if result != nil && result.FirstTokenMs != nil && *result.FirstTokenMs > 0 {
 			routingTTFT = time.Duration(*result.FirstTokenMs) * time.Millisecond
 		}
-		h.gatewayService.ReportRoutingResult(c.Request.Context(), account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
+		h.gatewayService.ReportRoutingSelectionResult(c.Request.Context(), selection, account.ID, reqModel, string(account.Platform), err == nil, routingTTFT)
 
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()

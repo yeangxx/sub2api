@@ -478,7 +478,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 						h.handleFailoverExhausted(c, failoverErr, true)
 						return
 					}
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+					h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
 					// 池模式：同账号重试
 					if failoverErr.RetryableOnSameAccount {
 						retryLimit := account.GetPoolModeRetryCount()
@@ -520,13 +520,13 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				}
 				if h.gatewayService.RoutingTransportErrorRetryable(c.Request.Context(), apiKey.GroupID, err) &&
 					service.OpenAICompactKeepaliveAdjustedWrittenSize(c) == writerSizeBeforeForward && switchCount < maxAccountSwitches {
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+					h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
 					h.gatewayService.RecordOpenAIAccountSwitch()
 					failedAccountIDs[account.ID] = struct{}{}
 					switchCount++
 					continue
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
 				upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
 				wroteFallback := false
 				if !upstreamErrorAlreadyCommunicated {
@@ -551,9 +551,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			if account.Type == service.AccountTypeOAuth && !account.IsShadow() {
 				h.gatewayService.UpdateCodexUsageSnapshotFromHeaders(c.Request.Context(), account.ID, result.ResponseHeaders)
 			}
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, true, result.FirstTokenMs)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, true, result.FirstTokenMs)
 		} else {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, true, nil)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, true, nil)
 		}
 
 		// 捕获请求信息（用于异步记录，避免在 goroutine 中访问 gin.Context）
@@ -987,7 +987,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 						h.handleAnthropicFailoverExhausted(c, failoverErr, true)
 						return
 					}
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, currentRoutingModel, false, nil)
+					h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, currentRoutingModel, false, nil)
 					// 池模式：同账号重试
 					if failoverErr.RetryableOnSameAccount {
 						retryLimit := account.GetPoolModeRetryCount()
@@ -1036,13 +1036,13 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				}
 				if h.gatewayService.RoutingTransportErrorRetryable(c.Request.Context(), apiKey.GroupID, err) &&
 					c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, currentRoutingModel, false, nil)
+					h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, currentRoutingModel, false, nil)
 					h.gatewayService.RecordOpenAIAccountSwitch()
 					failedAccountIDs[account.ID] = struct{}{}
 					switchCount++
 					continue
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, currentRoutingModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, currentRoutingModel, false, nil)
 				wroteFallback := h.ensureAnthropicErrorResponse(c, streamStarted)
 				reqLog.Warn("openai_messages.forward_failed",
 					zap.Int64("account_id", account.ID),
@@ -1053,9 +1053,9 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			}
 		}
 		if result != nil {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, currentRoutingModel, true, result.FirstTokenMs)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, currentRoutingModel, true, result.FirstTokenMs)
 		} else {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, currentRoutingModel, true, nil)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, currentRoutingModel, true, nil)
 		}
 
 		userAgent := c.GetHeader("User-Agent")
@@ -1702,7 +1702,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				if strings.TrimSpace(result.Model) != "" {
 					healthModel = result.Model
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, healthModel, true, result.FirstTokenMs)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(ctx, selection, account.ID, healthModel, true, result.FirstTokenMs)
 				inboundEndpoint := GetInboundEndpoint(c)
 				upstreamEndpoint := resolveOpenAIUpstreamEndpoint(c, account, result)
 				quotaPlatform := service.QuotaPlatform(c.Request.Context(), apiKey)
@@ -1757,7 +1757,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		if err := h.gatewayService.ProxyResponsesWebSocketFromClient(ctx, c, wsConn, account, token, wsFirstMessage, hooks); err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) && h.gatewayService.RoutingErrorRetryable(ctx, apiKey.GroupID, err) {
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(ctx, selection, account.ID, reqModel, false, nil)
 				releaseAccountSlot()
 				failedAccountIDs[account.ID] = struct{}{}
 				lastFailoverErr = failoverErr
@@ -1802,7 +1802,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				return
 			}
 
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(ctx, selection, account.ID, reqModel, false, nil)
 			closeStatus, closeReason := summarizeWSCloseErrorForLog(err)
 			reqLog.Warn("openai.websocket_proxy_failed",
 				zap.Int64("account_id", account.ID),

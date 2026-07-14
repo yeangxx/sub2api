@@ -243,7 +243,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 						h.handleFailoverExhausted(c, failoverErr, true)
 						return
 					}
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+					h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
 					// Pool mode: retry on the same account
 					if failoverErr.RetryableOnSameAccount {
 						retryLimit := account.GetPoolModeRetryCount()
@@ -285,13 +285,13 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				}
 				if h.gatewayService.RoutingTransportErrorRetryable(c.Request.Context(), apiKey.GroupID, err) &&
 					c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+					h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
 					h.gatewayService.RecordOpenAIAccountSwitch()
 					failedAccountIDs[account.ID] = struct{}{}
 					switchCount++
 					continue
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
 				upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
 				wroteFallback := false
 				if !upstreamErrorAlreadyCommunicated {
@@ -307,9 +307,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			}
 		}
 		if result != nil {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, true, result.FirstTokenMs)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, true, result.FirstTokenMs)
 		} else {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, reqModel, true, nil)
+			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, true, nil)
 		}
 
 		userAgent := c.GetHeader("User-Agent")
