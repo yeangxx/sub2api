@@ -12,9 +12,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/httpclient"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 )
@@ -27,6 +30,7 @@ type RoutingPolicyHandler struct {
 	accountRepo service.AccountRepository
 	runtime     *service.RoutingPolicyRuntime
 	encryptor   service.SecretEncryptor
+	cfg         *config.Config
 }
 
 func NewRoutingPolicyHandler(
@@ -34,8 +38,9 @@ func NewRoutingPolicyHandler(
 	accountRepo service.AccountRepository,
 	runtime *service.RoutingPolicyRuntime,
 	encryptor service.SecretEncryptor,
+	cfg *config.Config,
 ) *RoutingPolicyHandler {
-	return &RoutingPolicyHandler{control: control, accountRepo: accountRepo, runtime: runtime, encryptor: encryptor}
+	return &RoutingPolicyHandler{control: control, accountRepo: accountRepo, runtime: runtime, encryptor: encryptor, cfg: cfg}
 }
 
 type routingPolicyDTO struct {
@@ -955,9 +960,14 @@ func (h *RoutingPolicyHandler) SyncPriceBook(c *gin.Context) {
 		return
 	}
 	urlValue, _ := book.SourceConfig["url"].(string)
-	parsedURL, err := url.Parse(strings.TrimSpace(urlValue))
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Host == "" {
-		response.BadRequest(c, "source_config.url must be an http or https URL")
+	normalizedURL, err := h.validatePriceSourceURL(urlValue)
+	if err != nil {
+		response.BadRequest(c, "invalid source_config.url: "+err.Error())
+		return
+	}
+	parsedURL, err := url.Parse(normalizedURL)
+	if err != nil {
+		response.BadRequest(c, "invalid source_config.url")
 		return
 	}
 	request, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, parsedURL.String(), nil)
@@ -975,7 +985,11 @@ func (h *RoutingPolicyHandler) SyncPriceBook(c *gin.Context) {
 			request.Header.Set(key, value)
 		}
 	}
-	client := &http.Client{Timeout: 15 * time.Second}
+	client, err := h.priceSourceHTTPClient()
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "create price source client failed")
+		return
+	}
 	resp, err := client.Do(request)
 	if err != nil {
 		response.Error(c, http.StatusBadGateway, "price source request failed: "+err.Error())
@@ -1017,6 +1031,45 @@ func (h *RoutingPolicyHandler) SyncPriceBook(c *gin.Context) {
 	h.audit(c, nil, &revision.ID, nil, "price_book_sync", map[string]any{"price_book_id": id, "source": parsedURL.String()})
 	response.Created(c, priceRevisionDTO(*revision, prices))
 }
+
+func (h *RoutingPolicyHandler) validatePriceSourceURL(raw string) (string, error) {
+	if h.cfg == nil {
+		return "", errors.New("price source security config is unavailable")
+	}
+	allowlist := h.cfg.Security.URLAllowlist
+	if !allowlist.Enabled {
+		return urlvalidator.ValidateURLFormat(raw, allowlist.AllowInsecureHTTP)
+	}
+	return urlvalidator.ValidateHTTPSURL(raw, urlvalidator.ValidationOptions{
+		AllowedHosts:     allowlist.PricingHosts,
+		RequireAllowlist: true,
+		AllowPrivate:     allowlist.AllowPrivateHosts,
+	})
+}
+
+func (h *RoutingPolicyHandler) priceSourceHTTPClient() (*http.Client, error) {
+	if h.cfg == nil {
+		return nil, errors.New("price source security config is unavailable")
+	}
+	allowlist := h.cfg.Security.URLAllowlist
+	baseClient, err := httpclient.GetClient(httpclient.Options{
+		Timeout:               15 * time.Second,
+		ResponseHeaderTimeout: 15 * time.Second,
+		ValidateResolvedIP:    allowlist.Enabled,
+		AllowPrivateHosts:     allowlist.AllowPrivateHosts,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{
+		Transport: baseClient.Transport,
+		Timeout:   baseClient.Timeout,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}, nil
+}
+
 func (h *RoutingPolicyHandler) PriceBook(c *gin.Context) {
 	id, ok := parsePositiveID(c, "id")
 	if !ok {

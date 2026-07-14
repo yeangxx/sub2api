@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -85,8 +86,9 @@ func ProvideRoutingPolicyHandler(
 	accountRepo service.AccountRepository,
 	runtime *service.RoutingPolicyRuntime,
 	encryptor service.SecretEncryptor,
+	cfg *config.Config,
 ) *admin.RoutingPolicyHandler {
-	return admin.NewRoutingPolicyHandler(control, accountRepo, runtime, encryptor)
+	return admin.NewRoutingPolicyHandler(control, accountRepo, runtime, encryptor, cfg)
 }
 
 // ProvideSystemHandler creates admin.SystemHandler with UpdateService

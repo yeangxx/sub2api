@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -19,6 +20,13 @@ type routingPolicyAdminRepoStub struct {
 	policy   *service.RoutingPolicy
 	revision *service.RoutingPolicyRevision
 	bound    *service.RoutingPolicyBinding
+}
+
+func testPriceSourceConfig() *config.Config {
+	return &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{
+		AllowInsecureHTTP: true,
+		AllowPrivateHosts: true,
+	}}}
 }
 
 type routingAccountRepoStub struct {
@@ -122,7 +130,7 @@ func TestRoutingSimulationDTOOmitsAccountSecrets(t *testing.T) {
 
 func TestRoutingPolicyValidateRejectsUnknownFields(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := NewRoutingPolicyHandler(nil, nil, nil, nil)
+	h := NewRoutingPolicyHandler(nil, nil, nil, nil, nil)
 	r := gin.New()
 	r.POST("/validate", h.Validate)
 	req := httptest.NewRequest(http.MethodPost, "/validate", strings.NewReader(`{"config":{"schema_version":1,"scoring":{"price":1},"unexpected":true}}`))
@@ -133,7 +141,7 @@ func TestRoutingPolicyValidateRejectsUnknownFields(t *testing.T) {
 
 func TestRoutingPolicyValidateAcceptsValidConfig(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := NewRoutingPolicyHandler(nil, nil, nil, nil)
+	h := NewRoutingPolicyHandler(nil, nil, nil, nil, nil)
 	r := gin.New()
 	r.POST("/validate", h.Validate)
 	body := `{"config":{"schema_version":1,"scoring":{"price":1},"timeouts":{"request_timeout_ms":1000}}}`
@@ -150,7 +158,7 @@ func TestRoutingPolicyBindingAcceptsArchivedRevisionThatWasPublished(t *testing.
 		policy:   &service.RoutingPolicy{ID: 9, Status: "active"},
 		revision: &service.RoutingPolicyRevision{ID: 7, PolicyID: 9, State: service.RoutingPolicyRevisionArchived, PublishedAt: &publishedAt},
 	}
-	h := NewRoutingPolicyHandler(service.NewRoutingPolicyControlService(repo, nil), nil, nil, nil)
+	h := NewRoutingPolicyHandler(service.NewRoutingPolicyControlService(repo, nil), nil, nil, nil, nil)
 	r := gin.New()
 	r.POST("/routing-policies/:id/bindings/groups/:group_id", h.BindGroup)
 	req := httptest.NewRequest(http.MethodPost, "/routing-policies/9/bindings/groups/3", strings.NewReader(`{"revision_id":7,"mode":"enforce"}`))
@@ -256,7 +264,7 @@ func TestUpdatePriceBookKeepsMaskedHeaderCiphertext(t *testing.T) {
 			"headers": map[string]any{"Authorization": storedValue},
 		},
 	}}
-	h := &RoutingPolicyHandler{control: service.NewRoutingPolicyControlService(nil, repo), encryptor: routingSecretEncryptorStub{}}
+	h := &RoutingPolicyHandler{control: service.NewRoutingPolicyControlService(nil, repo), encryptor: routingSecretEncryptorStub{}, cfg: testPriceSourceConfig()}
 	r := gin.New()
 	r.PUT("/upstream-price-books/:id", h.UpdatePriceBook)
 	req := httptest.NewRequest(http.MethodPut, "/upstream-price-books/1", strings.NewReader(`{
@@ -297,7 +305,7 @@ func TestSyncPriceBookDecryptsStoredHeaders(t *testing.T) {
 			},
 		},
 	}}
-	h := &RoutingPolicyHandler{control: service.NewRoutingPolicyControlService(nil, repo), encryptor: routingSecretEncryptorStub{}}
+	h := &RoutingPolicyHandler{control: service.NewRoutingPolicyControlService(nil, repo), encryptor: routingSecretEncryptorStub{}, cfg: testPriceSourceConfig()}
 	r := gin.New()
 	r.POST("/upstream-price-books/:id/sync", h.SyncPriceBook)
 	req := httptest.NewRequest(http.MethodPost, "/upstream-price-books/1/sync", nil)
@@ -307,4 +315,82 @@ func TestSyncPriceBookDecryptsStoredHeaders(t *testing.T) {
 	require.Equal(t, http.StatusCreated, w.Code, w.Body.String())
 	require.Equal(t, "Bearer super-secret", receivedAuthorization)
 	require.NotNil(t, repo.revision)
+}
+
+func TestSyncPriceBookDoesNotFollowRedirects(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	targetRequests := 0
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		targetRequests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"prices":[{"model_pattern":"gpt-test","input_price_per_million":"1","output_price_per_million":"2","request_price":"0"}]}`))
+	}))
+	defer target.Close()
+	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, http.StatusFound)
+	}))
+	defer source.Close()
+
+	repo := &routingPriceBookRepoStub{book: &service.UpstreamPriceBook{
+		ID:       1,
+		Name:     "provider prices",
+		Source:   service.PriceBookSourceHTTPJSON,
+		Status:   "active",
+		Currency: "USD",
+		SourceConfig: map[string]any{
+			"url": source.URL,
+			"headers": map[string]any{
+				"Authorization": upstreamEncryptedValuePrefix + "sealed:Bearer super-secret",
+			},
+		},
+	}}
+	h := &RoutingPolicyHandler{control: service.NewRoutingPolicyControlService(nil, repo), encryptor: routingSecretEncryptorStub{}, cfg: testPriceSourceConfig()}
+	r := gin.New()
+	r.POST("/upstream-price-books/:id/sync", h.SyncPriceBook)
+	req := httptest.NewRequest(http.MethodPost, "/upstream-price-books/1/sync", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusBadGateway, w.Code, w.Body.String())
+	require.Zero(t, targetRequests)
+	require.Nil(t, repo.revision)
+}
+
+func TestSyncPriceBookRejectsPrivateURLWhenAllowlistEnabled(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &routingPriceBookRepoStub{book: &service.UpstreamPriceBook{
+		ID:       1,
+		Source:   service.PriceBookSourceHTTPJSON,
+		Status:   "active",
+		Currency: "USD",
+		SourceConfig: map[string]any{
+			"url": "https://127.0.0.1/prices.json",
+		},
+	}}
+	h := &RoutingPolicyHandler{
+		control: service.NewRoutingPolicyControlService(nil, repo),
+		cfg: &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{
+			Enabled:           true,
+			PricingHosts:      []string{"127.0.0.1"},
+			AllowPrivateHosts: false,
+		}}},
+	}
+	r := gin.New()
+	r.POST("/upstream-price-books/:id/sync", h.SyncPriceBook)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/upstream-price-books/1/sync", nil))
+
+	require.Equal(t, http.StatusBadRequest, w.Code, w.Body.String())
+	require.Nil(t, repo.revision)
+}
+
+func TestValidatePriceSourceURLAcceptsAllowlistedHTTPSHost(t *testing.T) {
+	h := &RoutingPolicyHandler{cfg: &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{
+		Enabled:      true,
+		PricingHosts: []string{"prices.example.com"},
+	}}}}
+
+	normalized, err := h.validatePriceSourceURL("https://prices.example.com/v1/")
+	require.NoError(t, err)
+	require.Equal(t, "https://prices.example.com/v1", normalized)
 }
