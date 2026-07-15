@@ -171,20 +171,6 @@ func (_c *ChannelMonitorCreate) SetCreatedBy(v int64) *ChannelMonitorCreate {
 	return _c
 }
 
-// SetAccountID sets the "account_id" field.
-func (_c *ChannelMonitorCreate) SetAccountID(v int64) *ChannelMonitorCreate {
-	_c.mutation.SetAccountID(v)
-	return _c
-}
-
-// SetNillableAccountID sets the "account_id" field if the given value is not nil.
-func (_c *ChannelMonitorCreate) SetNillableAccountID(v *int64) *ChannelMonitorCreate {
-	if v != nil {
-		_c.SetAccountID(*v)
-	}
-	return _c
-}
-
 // SetTemplateID sets the "template_id" field.
 func (_c *ChannelMonitorCreate) SetTemplateID(v int64) *ChannelMonitorCreate {
 	_c.mutation.SetTemplateID(v)
@@ -531,10 +517,6 @@ func (_c *ChannelMonitorCreate) createSpec() (*ChannelMonitor, *sqlgraph.CreateS
 		_spec.SetField(channelmonitor.FieldCreatedBy, field.TypeInt64, value)
 		_node.CreatedBy = value
 	}
-	if value, ok := _c.mutation.AccountID(); ok {
-		_spec.SetField(channelmonitor.FieldAccountID, field.TypeInt64, value)
-		_node.AccountID = &value
-	}
 	if value, ok := _c.mutation.ExtraHeaders(); ok {
 		_spec.SetField(channelmonitor.FieldExtraHeaders, field.TypeJSON, value)
 		_node.ExtraHeaders = value
@@ -843,30 +825,6 @@ func (u *ChannelMonitorUpsert) UpdateCreatedBy() *ChannelMonitorUpsert {
 // AddCreatedBy adds v to the "created_by" field.
 func (u *ChannelMonitorUpsert) AddCreatedBy(v int64) *ChannelMonitorUpsert {
 	u.Add(channelmonitor.FieldCreatedBy, v)
-	return u
-}
-
-// SetAccountID sets the "account_id" field.
-func (u *ChannelMonitorUpsert) SetAccountID(v int64) *ChannelMonitorUpsert {
-	u.Set(channelmonitor.FieldAccountID, v)
-	return u
-}
-
-// UpdateAccountID sets the "account_id" field to the value that was provided on create.
-func (u *ChannelMonitorUpsert) UpdateAccountID() *ChannelMonitorUpsert {
-	u.SetExcluded(channelmonitor.FieldAccountID)
-	return u
-}
-
-// AddAccountID adds v to the "account_id" field.
-func (u *ChannelMonitorUpsert) AddAccountID(v int64) *ChannelMonitorUpsert {
-	u.Add(channelmonitor.FieldAccountID, v)
-	return u
-}
-
-// ClearAccountID clears the value of the "account_id" field.
-func (u *ChannelMonitorUpsert) ClearAccountID() *ChannelMonitorUpsert {
-	u.SetNull(channelmonitor.FieldAccountID)
 	return u
 }
 
@@ -1203,34 +1161,6 @@ func (u *ChannelMonitorUpsertOne) AddCreatedBy(v int64) *ChannelMonitorUpsertOne
 func (u *ChannelMonitorUpsertOne) UpdateCreatedBy() *ChannelMonitorUpsertOne {
 	return u.Update(func(s *ChannelMonitorUpsert) {
 		s.UpdateCreatedBy()
-	})
-}
-
-// SetAccountID sets the "account_id" field.
-func (u *ChannelMonitorUpsertOne) SetAccountID(v int64) *ChannelMonitorUpsertOne {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.SetAccountID(v)
-	})
-}
-
-// AddAccountID adds v to the "account_id" field.
-func (u *ChannelMonitorUpsertOne) AddAccountID(v int64) *ChannelMonitorUpsertOne {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.AddAccountID(v)
-	})
-}
-
-// UpdateAccountID sets the "account_id" field to the value that was provided on create.
-func (u *ChannelMonitorUpsertOne) UpdateAccountID() *ChannelMonitorUpsertOne {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.UpdateAccountID()
-	})
-}
-
-// ClearAccountID clears the value of the "account_id" field.
-func (u *ChannelMonitorUpsertOne) ClearAccountID() *ChannelMonitorUpsertOne {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.ClearAccountID()
 	})
 }
 
@@ -1743,34 +1673,6 @@ func (u *ChannelMonitorUpsertBulk) AddCreatedBy(v int64) *ChannelMonitorUpsertBu
 func (u *ChannelMonitorUpsertBulk) UpdateCreatedBy() *ChannelMonitorUpsertBulk {
 	return u.Update(func(s *ChannelMonitorUpsert) {
 		s.UpdateCreatedBy()
-	})
-}
-
-// SetAccountID sets the "account_id" field.
-func (u *ChannelMonitorUpsertBulk) SetAccountID(v int64) *ChannelMonitorUpsertBulk {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.SetAccountID(v)
-	})
-}
-
-// AddAccountID adds v to the "account_id" field.
-func (u *ChannelMonitorUpsertBulk) AddAccountID(v int64) *ChannelMonitorUpsertBulk {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.AddAccountID(v)
-	})
-}
-
-// UpdateAccountID sets the "account_id" field to the value that was provided on create.
-func (u *ChannelMonitorUpsertBulk) UpdateAccountID() *ChannelMonitorUpsertBulk {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.UpdateAccountID()
-	})
-}
-
-// ClearAccountID clears the value of the "account_id" field.
-func (u *ChannelMonitorUpsertBulk) ClearAccountID() *ChannelMonitorUpsertBulk {
-	return u.Update(func(s *ChannelMonitorUpsert) {
-		s.ClearAccountID()
 	})
 }
 

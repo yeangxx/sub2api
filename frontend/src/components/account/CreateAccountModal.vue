@@ -3086,13 +3086,6 @@
           </div>
         </div>
 
-        <AccountRoutingFields
-          v-model:failureDomain="form.failure_domain"
-          v-model:reliabilityClass="form.reliability_class"
-          v-model:routingLabels="form.routing_labels"
-          v-model:priceBookId="form.price_book_id"
-        />
-
         <!-- Group Selection - 仅标准模式显示 -->
         <GroupSelector
           v-if="!authStore.isSimpleMode"
@@ -3501,8 +3494,6 @@ import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
-import AccountRoutingFields from '@/components/account/AccountRoutingFields.vue'
-import { withAccountRoutingCreateFields } from '@/components/account/accountRoutingForm'
 import {
   applyAntigravityProjectID,
   applyHeaderOverride,
@@ -4013,11 +4004,7 @@ const form = reactive({
   priority: 1,
   rate_multiplier: 1,
   group_ids: [] as number[],
-  expires_at: null as number | null,
-  failure_domain: '',
-  reliability_class: '',
-  routing_labels: {} as Record<string, string>,
-  price_book_id: null as number | null
+  expires_at: null as number | null
 })
 
 // Helper to check if current type needs OAuth flow
@@ -4519,9 +4506,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
 const submitCreateAccount = async (payload: CreateAccountRequest) => {
   submitting.value = true
   try {
-    await adminAPI.accounts.create(
-      withAntigravityConfirmFlag(withAccountRoutingCreateFields(payload, form))
-    )
+    await adminAPI.accounts.create(withAntigravityConfirmFlag(payload))
     appStore.showSuccess(t('admin.accounts.accountCreated'))
     emit('created')
     handleClose()
@@ -4557,10 +4542,6 @@ const resetForm = () => {
   form.rate_multiplier = 1
   form.group_ids = []
   form.expires_at = null
-  form.failure_domain = ''
-  form.reliability_class = ''
-  form.routing_labels = {}
-  form.price_book_id = null
   accountCategory.value = 'oauth-based'
   addMethod.value = 'oauth'
   apiKeyBaseUrl.value = 'https://api.anthropic.com'
@@ -5238,7 +5219,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
           return
         }
 
-        await adminAPI.accounts.create(withAccountRoutingCreateFields({
+        await adminAPI.accounts.create({
           name: accountName,
           notes: form.notes,
           platform: 'grok',
@@ -5253,7 +5234,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
           group_ids: form.group_ids,
           expires_at: form.expires_at,
           auto_pause_on_expired: autoPauseOnExpired.value
-        }, form))
+        })
         successCount++
       } catch (error: any) {
         failedCount++
@@ -5402,7 +5383,7 @@ const handleOpenAIExchange = async (authCode: string) => {
     }
 
     if (shouldCreateOpenAI) {
-      await adminAPI.accounts.create(withAccountRoutingCreateFields({
+      await adminAPI.accounts.create({
         name: form.name,
         notes: form.notes,
         platform: 'openai',
@@ -5417,7 +5398,7 @@ const handleOpenAIExchange = async (authCode: string) => {
         group_ids: form.group_ids,
         expires_at: form.expires_at,
         auto_pause_on_expired: autoPauseOnExpired.value
-      }, form))
+      })
       appStore.showSuccess(t('admin.accounts.accountCreated'))
     }
 
@@ -5432,8 +5413,8 @@ const handleOpenAIExchange = async (authCode: string) => {
 }
 
 // OpenAI 手动 RT 批量验证和创建
-// ChatGPT iOS OAuth client_id for iOS-issued refresh tokens.
-const OPENAI_IOS_RT_CLIENT_ID = 'app_2SKx67EdpoN0G6j64rFvigXD'
+// OpenAI Mobile RT client_id
+const OPENAI_MOBILE_RT_CLIENT_ID = 'app_LlGpXReQgckcGGUo2JrYvtJK'
 
 const buildOpenAICodexImportCredentialExtras = (): Record<string, unknown> | null => {
   const credentials: Record<string, unknown> = {}
@@ -5655,7 +5636,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         const accountName = refreshTokens.length > 1 ? `${baseName} #${i + 1}` : baseName
 
         if (shouldCreateOpenAI) {
-          await adminAPI.accounts.create(withAccountRoutingCreateFields({
+          await adminAPI.accounts.create({
             name: accountName,
             notes: form.notes,
             platform: 'openai',
@@ -5670,7 +5651,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
             group_ids: form.group_ids,
             expires_at: form.expires_at,
             auto_pause_on_expired: autoPauseOnExpired.value
-          }, form))
+          })
         }
 
         successCount++
@@ -5708,8 +5689,8 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
 // 手动输入 RT（Codex CLI client_id，默认）
 const handleOpenAIValidateRT = (rt: string) => handleOpenAIBatchRT(rt)
 
-// 手动输入 ChatGPT iOS RT
-const handleOpenAIValidateMobileRT = (rt: string) => handleOpenAIBatchRT(rt, OPENAI_IOS_RT_CLIENT_ID)
+// 手动输入 Mobile RT
+const handleOpenAIValidateMobileRT = (rt: string) => handleOpenAIBatchRT(rt, OPENAI_MOBILE_RT_CLIENT_ID)
 
 // Antigravity 手动 RT 批量验证和创建
 const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
@@ -5770,7 +5751,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
           expires_at: form.expires_at,
           auto_pause_on_expired: autoPauseOnExpired.value
         })
-        await adminAPI.accounts.create(withAccountRoutingCreateFields(createPayload, form))
+        await adminAPI.accounts.create(createPayload)
         successCount++
       } catch (error: any) {
         failedCount++
@@ -6133,7 +6114,7 @@ const handleCookieAuth = async (sessionKey: string) => {
           credentials.temp_unschedulable_rules = tempUnschedPayload
         }
 
-        await adminAPI.accounts.create(withAccountRoutingCreateFields({
+        await adminAPI.accounts.create({
           name: accountName,
           notes: form.notes,
           platform: form.platform,
@@ -6148,7 +6129,7 @@ const handleCookieAuth = async (sessionKey: string) => {
           group_ids: form.group_ids,
           expires_at: form.expires_at,
           auto_pause_on_expired: autoPauseOnExpired.value
-        }, form))
+        })
 
         successCount++
       } catch (error: any) {

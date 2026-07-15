@@ -2317,11 +2317,6 @@ type AccountMutation struct {
 	session_window_end          *time.Time
 	session_window_status       *string
 	quota_dimension             *account.QuotaDimension
-	failure_domain              *string
-	reliability_class           *string
-	routing_labels              *map[string]string
-	price_book_id               *int64
-	addprice_book_id            *int64
 	clearedFields               map[string]struct{}
 	groups                      map[int64]struct{}
 	removedgroups               map[int64]struct{}
@@ -3878,210 +3873,6 @@ func (m *AccountMutation) ResetQuotaDimension() {
 	m.quota_dimension = nil
 }
 
-// SetFailureDomain sets the "failure_domain" field.
-func (m *AccountMutation) SetFailureDomain(s string) {
-	m.failure_domain = &s
-}
-
-// FailureDomain returns the value of the "failure_domain" field in the mutation.
-func (m *AccountMutation) FailureDomain() (r string, exists bool) {
-	v := m.failure_domain
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldFailureDomain returns the old "failure_domain" field's value of the Account entity.
-// If the Account object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AccountMutation) OldFailureDomain(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFailureDomain is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFailureDomain requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFailureDomain: %w", err)
-	}
-	return oldValue.FailureDomain, nil
-}
-
-// ClearFailureDomain clears the value of the "failure_domain" field.
-func (m *AccountMutation) ClearFailureDomain() {
-	m.failure_domain = nil
-	m.clearedFields[account.FieldFailureDomain] = struct{}{}
-}
-
-// FailureDomainCleared returns if the "failure_domain" field was cleared in this mutation.
-func (m *AccountMutation) FailureDomainCleared() bool {
-	_, ok := m.clearedFields[account.FieldFailureDomain]
-	return ok
-}
-
-// ResetFailureDomain resets all changes to the "failure_domain" field.
-func (m *AccountMutation) ResetFailureDomain() {
-	m.failure_domain = nil
-	delete(m.clearedFields, account.FieldFailureDomain)
-}
-
-// SetReliabilityClass sets the "reliability_class" field.
-func (m *AccountMutation) SetReliabilityClass(s string) {
-	m.reliability_class = &s
-}
-
-// ReliabilityClass returns the value of the "reliability_class" field in the mutation.
-func (m *AccountMutation) ReliabilityClass() (r string, exists bool) {
-	v := m.reliability_class
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldReliabilityClass returns the old "reliability_class" field's value of the Account entity.
-// If the Account object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AccountMutation) OldReliabilityClass(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldReliabilityClass is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldReliabilityClass requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldReliabilityClass: %w", err)
-	}
-	return oldValue.ReliabilityClass, nil
-}
-
-// ClearReliabilityClass clears the value of the "reliability_class" field.
-func (m *AccountMutation) ClearReliabilityClass() {
-	m.reliability_class = nil
-	m.clearedFields[account.FieldReliabilityClass] = struct{}{}
-}
-
-// ReliabilityClassCleared returns if the "reliability_class" field was cleared in this mutation.
-func (m *AccountMutation) ReliabilityClassCleared() bool {
-	_, ok := m.clearedFields[account.FieldReliabilityClass]
-	return ok
-}
-
-// ResetReliabilityClass resets all changes to the "reliability_class" field.
-func (m *AccountMutation) ResetReliabilityClass() {
-	m.reliability_class = nil
-	delete(m.clearedFields, account.FieldReliabilityClass)
-}
-
-// SetRoutingLabels sets the "routing_labels" field.
-func (m *AccountMutation) SetRoutingLabels(value map[string]string) {
-	m.routing_labels = &value
-}
-
-// RoutingLabels returns the value of the "routing_labels" field in the mutation.
-func (m *AccountMutation) RoutingLabels() (r map[string]string, exists bool) {
-	v := m.routing_labels
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRoutingLabels returns the old "routing_labels" field's value of the Account entity.
-// If the Account object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AccountMutation) OldRoutingLabels(ctx context.Context) (v map[string]string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRoutingLabels is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRoutingLabels requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRoutingLabels: %w", err)
-	}
-	return oldValue.RoutingLabels, nil
-}
-
-// ResetRoutingLabels resets all changes to the "routing_labels" field.
-func (m *AccountMutation) ResetRoutingLabels() {
-	m.routing_labels = nil
-}
-
-// SetPriceBookID sets the "price_book_id" field.
-func (m *AccountMutation) SetPriceBookID(i int64) {
-	m.price_book_id = &i
-	m.addprice_book_id = nil
-}
-
-// PriceBookID returns the value of the "price_book_id" field in the mutation.
-func (m *AccountMutation) PriceBookID() (r int64, exists bool) {
-	v := m.price_book_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPriceBookID returns the old "price_book_id" field's value of the Account entity.
-// If the Account object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AccountMutation) OldPriceBookID(ctx context.Context) (v *int64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPriceBookID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPriceBookID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPriceBookID: %w", err)
-	}
-	return oldValue.PriceBookID, nil
-}
-
-// AddPriceBookID adds i to the "price_book_id" field.
-func (m *AccountMutation) AddPriceBookID(i int64) {
-	if m.addprice_book_id != nil {
-		*m.addprice_book_id += i
-	} else {
-		m.addprice_book_id = &i
-	}
-}
-
-// AddedPriceBookID returns the value that was added to the "price_book_id" field in this mutation.
-func (m *AccountMutation) AddedPriceBookID() (r int64, exists bool) {
-	v := m.addprice_book_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearPriceBookID clears the value of the "price_book_id" field.
-func (m *AccountMutation) ClearPriceBookID() {
-	m.price_book_id = nil
-	m.addprice_book_id = nil
-	m.clearedFields[account.FieldPriceBookID] = struct{}{}
-}
-
-// PriceBookIDCleared returns if the "price_book_id" field was cleared in this mutation.
-func (m *AccountMutation) PriceBookIDCleared() bool {
-	_, ok := m.clearedFields[account.FieldPriceBookID]
-	return ok
-}
-
-// ResetPriceBookID resets all changes to the "price_book_id" field.
-func (m *AccountMutation) ResetPriceBookID() {
-	m.price_book_id = nil
-	m.addprice_book_id = nil
-	delete(m.clearedFields, account.FieldPriceBookID)
-}
-
 // AddGroupIDs adds the "groups" edge to the Group entity by ids.
 func (m *AccountMutation) AddGroupIDs(ids ...int64) {
 	if m.groups == nil {
@@ -4345,7 +4136,7 @@ func (m *AccountMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AccountMutation) Fields() []string {
-	fields := make([]string, 0, 35)
+	fields := make([]string, 0, 31)
 	if m.created_at != nil {
 		fields = append(fields, account.FieldCreatedAt)
 	}
@@ -4439,18 +4230,6 @@ func (m *AccountMutation) Fields() []string {
 	if m.quota_dimension != nil {
 		fields = append(fields, account.FieldQuotaDimension)
 	}
-	if m.failure_domain != nil {
-		fields = append(fields, account.FieldFailureDomain)
-	}
-	if m.reliability_class != nil {
-		fields = append(fields, account.FieldReliabilityClass)
-	}
-	if m.routing_labels != nil {
-		fields = append(fields, account.FieldRoutingLabels)
-	}
-	if m.price_book_id != nil {
-		fields = append(fields, account.FieldPriceBookID)
-	}
 	return fields
 }
 
@@ -4521,14 +4300,6 @@ func (m *AccountMutation) Field(name string) (ent.Value, bool) {
 		return m.ParentAccountID()
 	case account.FieldQuotaDimension:
 		return m.QuotaDimension()
-	case account.FieldFailureDomain:
-		return m.FailureDomain()
-	case account.FieldReliabilityClass:
-		return m.ReliabilityClass()
-	case account.FieldRoutingLabels:
-		return m.RoutingLabels()
-	case account.FieldPriceBookID:
-		return m.PriceBookID()
 	}
 	return nil, false
 }
@@ -4600,14 +4371,6 @@ func (m *AccountMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldParentAccountID(ctx)
 	case account.FieldQuotaDimension:
 		return m.OldQuotaDimension(ctx)
-	case account.FieldFailureDomain:
-		return m.OldFailureDomain(ctx)
-	case account.FieldReliabilityClass:
-		return m.OldReliabilityClass(ctx)
-	case account.FieldRoutingLabels:
-		return m.OldRoutingLabels(ctx)
-	case account.FieldPriceBookID:
-		return m.OldPriceBookID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Account field %s", name)
 }
@@ -4834,34 +4597,6 @@ func (m *AccountMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetQuotaDimension(v)
 		return nil
-	case account.FieldFailureDomain:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetFailureDomain(v)
-		return nil
-	case account.FieldReliabilityClass:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetReliabilityClass(v)
-		return nil
-	case account.FieldRoutingLabels:
-		v, ok := value.(map[string]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRoutingLabels(v)
-		return nil
-	case account.FieldPriceBookID:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPriceBookID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Account field %s", name)
 }
@@ -4885,9 +4620,6 @@ func (m *AccountMutation) AddedFields() []string {
 	if m.addrate_multiplier != nil {
 		fields = append(fields, account.FieldRateMultiplier)
 	}
-	if m.addprice_book_id != nil {
-		fields = append(fields, account.FieldPriceBookID)
-	}
 	return fields
 }
 
@@ -4906,8 +4638,6 @@ func (m *AccountMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPriority()
 	case account.FieldRateMultiplier:
 		return m.AddedRateMultiplier()
-	case account.FieldPriceBookID:
-		return m.AddedPriceBookID()
 	}
 	return nil, false
 }
@@ -4951,13 +4681,6 @@ func (m *AccountMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRateMultiplier(v)
-		return nil
-	case account.FieldPriceBookID:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddPriceBookID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Account numeric field %s", name)
@@ -5017,15 +4740,6 @@ func (m *AccountMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(account.FieldParentAccountID) {
 		fields = append(fields, account.FieldParentAccountID)
-	}
-	if m.FieldCleared(account.FieldFailureDomain) {
-		fields = append(fields, account.FieldFailureDomain)
-	}
-	if m.FieldCleared(account.FieldReliabilityClass) {
-		fields = append(fields, account.FieldReliabilityClass)
-	}
-	if m.FieldCleared(account.FieldPriceBookID) {
-		fields = append(fields, account.FieldPriceBookID)
 	}
 	return fields
 }
@@ -5091,15 +4805,6 @@ func (m *AccountMutation) ClearField(name string) error {
 		return nil
 	case account.FieldParentAccountID:
 		m.ClearParentAccountID()
-		return nil
-	case account.FieldFailureDomain:
-		m.ClearFailureDomain()
-		return nil
-	case account.FieldReliabilityClass:
-		m.ClearReliabilityClass()
-		return nil
-	case account.FieldPriceBookID:
-		m.ClearPriceBookID()
 		return nil
 	}
 	return fmt.Errorf("unknown Account nullable field %s", name)
@@ -5201,18 +4906,6 @@ func (m *AccountMutation) ResetField(name string) error {
 		return nil
 	case account.FieldQuotaDimension:
 		m.ResetQuotaDimension()
-		return nil
-	case account.FieldFailureDomain:
-		m.ResetFailureDomain()
-		return nil
-	case account.FieldReliabilityClass:
-		m.ResetReliabilityClass()
-		return nil
-	case account.FieldRoutingLabels:
-		m.ResetRoutingLabels()
-		return nil
-	case account.FieldPriceBookID:
-		m.ResetPriceBookID()
 		return nil
 	}
 	return fmt.Errorf("unknown Account field %s", name)
@@ -14928,8 +14621,6 @@ type ChannelMonitorMutation struct {
 	last_checked_at         *time.Time
 	created_by              *int64
 	addcreated_by           *int64
-	account_id              *int64
-	addaccount_id           *int64
 	extra_headers           *map[string]string
 	body_override_mode      *string
 	body_override           *map[string]interface{}
@@ -15686,76 +15377,6 @@ func (m *ChannelMonitorMutation) ResetCreatedBy() {
 	m.addcreated_by = nil
 }
 
-// SetAccountID sets the "account_id" field.
-func (m *ChannelMonitorMutation) SetAccountID(i int64) {
-	m.account_id = &i
-	m.addaccount_id = nil
-}
-
-// AccountID returns the value of the "account_id" field in the mutation.
-func (m *ChannelMonitorMutation) AccountID() (r int64, exists bool) {
-	v := m.account_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldAccountID returns the old "account_id" field's value of the ChannelMonitor entity.
-// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChannelMonitorMutation) OldAccountID(ctx context.Context) (v *int64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAccountID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAccountID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAccountID: %w", err)
-	}
-	return oldValue.AccountID, nil
-}
-
-// AddAccountID adds i to the "account_id" field.
-func (m *ChannelMonitorMutation) AddAccountID(i int64) {
-	if m.addaccount_id != nil {
-		*m.addaccount_id += i
-	} else {
-		m.addaccount_id = &i
-	}
-}
-
-// AddedAccountID returns the value that was added to the "account_id" field in this mutation.
-func (m *ChannelMonitorMutation) AddedAccountID() (r int64, exists bool) {
-	v := m.addaccount_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearAccountID clears the value of the "account_id" field.
-func (m *ChannelMonitorMutation) ClearAccountID() {
-	m.account_id = nil
-	m.addaccount_id = nil
-	m.clearedFields[channelmonitor.FieldAccountID] = struct{}{}
-}
-
-// AccountIDCleared returns if the "account_id" field was cleared in this mutation.
-func (m *ChannelMonitorMutation) AccountIDCleared() bool {
-	_, ok := m.clearedFields[channelmonitor.FieldAccountID]
-	return ok
-}
-
-// ResetAccountID resets all changes to the "account_id" field.
-func (m *ChannelMonitorMutation) ResetAccountID() {
-	m.account_id = nil
-	m.addaccount_id = nil
-	delete(m.clearedFields, channelmonitor.FieldAccountID)
-}
-
 // SetTemplateID sets the "template_id" field.
 func (m *ChannelMonitorMutation) SetTemplateID(i int64) {
 	m.request_template = &i
@@ -16108,7 +15729,7 @@ func (m *ChannelMonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChannelMonitorMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 19)
 	if m.created_at != nil {
 		fields = append(fields, channelmonitor.FieldCreatedAt)
 	}
@@ -16153,9 +15774,6 @@ func (m *ChannelMonitorMutation) Fields() []string {
 	}
 	if m.created_by != nil {
 		fields = append(fields, channelmonitor.FieldCreatedBy)
-	}
-	if m.account_id != nil {
-		fields = append(fields, channelmonitor.FieldAccountID)
 	}
 	if m.request_template != nil {
 		fields = append(fields, channelmonitor.FieldTemplateID)
@@ -16207,8 +15825,6 @@ func (m *ChannelMonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.LastCheckedAt()
 	case channelmonitor.FieldCreatedBy:
 		return m.CreatedBy()
-	case channelmonitor.FieldAccountID:
-		return m.AccountID()
 	case channelmonitor.FieldTemplateID:
 		return m.TemplateID()
 	case channelmonitor.FieldExtraHeaders:
@@ -16256,8 +15872,6 @@ func (m *ChannelMonitorMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldLastCheckedAt(ctx)
 	case channelmonitor.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
-	case channelmonitor.FieldAccountID:
-		return m.OldAccountID(ctx)
 	case channelmonitor.FieldTemplateID:
 		return m.OldTemplateID(ctx)
 	case channelmonitor.FieldExtraHeaders:
@@ -16380,13 +15994,6 @@ func (m *ChannelMonitorMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedBy(v)
 		return nil
-	case channelmonitor.FieldAccountID:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetAccountID(v)
-		return nil
 	case channelmonitor.FieldTemplateID:
 		v, ok := value.(int64)
 		if !ok {
@@ -16432,9 +16039,6 @@ func (m *ChannelMonitorMutation) AddedFields() []string {
 	if m.addcreated_by != nil {
 		fields = append(fields, channelmonitor.FieldCreatedBy)
 	}
-	if m.addaccount_id != nil {
-		fields = append(fields, channelmonitor.FieldAccountID)
-	}
 	return fields
 }
 
@@ -16449,8 +16053,6 @@ func (m *ChannelMonitorMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedJitterSeconds()
 	case channelmonitor.FieldCreatedBy:
 		return m.AddedCreatedBy()
-	case channelmonitor.FieldAccountID:
-		return m.AddedAccountID()
 	}
 	return nil, false
 }
@@ -16481,13 +16083,6 @@ func (m *ChannelMonitorMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddCreatedBy(v)
 		return nil
-	case channelmonitor.FieldAccountID:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddAccountID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown ChannelMonitor numeric field %s", name)
 }
@@ -16501,9 +16096,6 @@ func (m *ChannelMonitorMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(channelmonitor.FieldLastCheckedAt) {
 		fields = append(fields, channelmonitor.FieldLastCheckedAt)
-	}
-	if m.FieldCleared(channelmonitor.FieldAccountID) {
-		fields = append(fields, channelmonitor.FieldAccountID)
 	}
 	if m.FieldCleared(channelmonitor.FieldTemplateID) {
 		fields = append(fields, channelmonitor.FieldTemplateID)
@@ -16530,9 +16122,6 @@ func (m *ChannelMonitorMutation) ClearField(name string) error {
 		return nil
 	case channelmonitor.FieldLastCheckedAt:
 		m.ClearLastCheckedAt()
-		return nil
-	case channelmonitor.FieldAccountID:
-		m.ClearAccountID()
 		return nil
 	case channelmonitor.FieldTemplateID:
 		m.ClearTemplateID()
@@ -16592,9 +16181,6 @@ func (m *ChannelMonitorMutation) ResetField(name string) error {
 		return nil
 	case channelmonitor.FieldCreatedBy:
 		m.ResetCreatedBy()
-		return nil
-	case channelmonitor.FieldAccountID:
-		m.ResetAccountID()
 		return nil
 	case channelmonitor.FieldTemplateID:
 		m.ResetTemplateID()

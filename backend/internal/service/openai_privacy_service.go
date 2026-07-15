@@ -88,7 +88,6 @@ func disableOpenAITraining(ctx context.Context, clientFactory PrivacyClientFacto
 
 // ChatGPTAccountInfo 从 chatgpt.com/backend-api/accounts/check 获取的账号信息
 type ChatGPTAccountInfo struct {
-	AccountID             string
 	PlanType              string
 	Email                 string
 	SubscriptionExpiresAt string // entitlement.expires_at (RFC3339)
@@ -150,7 +149,7 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 		if acctRaw, ok := accounts[orgID]; ok {
 			if acct, ok := acctRaw.(map[string]any); ok {
 				if isUsableChatGPTAccountCandidate(acct, time.Now()) {
-					fillAccountInfo(info, orgID, acct)
+					fillAccountInfo(info, acct)
 				}
 			}
 		}
@@ -159,12 +158,11 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 	// 未匹配到时，遍历所有账号：优先 is_default，次选非 free
 	if info.PlanType == "" {
 		type candidate struct {
-			accountID string
 			planType  string
 			expiresAt string
 		}
 		var defaultC, paidC, anyC candidate
-		for accountID, acctRaw := range accounts {
+		for _, acctRaw := range accounts {
 			acct, ok := acctRaw.(map[string]any)
 			if !ok {
 				continue
@@ -178,25 +176,25 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 			}
 			ea := extractEntitlementExpiresAt(acct)
 			if anyC.planType == "" {
-				anyC = candidate{accountID: accountID, planType: planType, expiresAt: ea}
+				anyC = candidate{planType, ea}
 			}
 			if account, ok := acct["account"].(map[string]any); ok {
 				if isDefault, _ := account["is_default"].(bool); isDefault {
-					defaultC = candidate{accountID: accountID, planType: planType, expiresAt: ea}
+					defaultC = candidate{planType, ea}
 				}
 			}
 			if !strings.EqualFold(planType, "free") && paidC.planType == "" {
-				paidC = candidate{accountID: accountID, planType: planType, expiresAt: ea}
+				paidC = candidate{planType, ea}
 			}
 		}
 		// 优先级：default > 非 free > 任意
 		switch {
 		case defaultC.planType != "":
-			info.AccountID, info.PlanType, info.SubscriptionExpiresAt = defaultC.accountID, defaultC.planType, defaultC.expiresAt
+			info.PlanType, info.SubscriptionExpiresAt = defaultC.planType, defaultC.expiresAt
 		case paidC.planType != "":
-			info.AccountID, info.PlanType, info.SubscriptionExpiresAt = paidC.accountID, paidC.planType, paidC.expiresAt
+			info.PlanType, info.SubscriptionExpiresAt = paidC.planType, paidC.expiresAt
 		default:
-			info.AccountID, info.PlanType, info.SubscriptionExpiresAt = anyC.accountID, anyC.planType, anyC.expiresAt
+			info.PlanType, info.SubscriptionExpiresAt = anyC.planType, anyC.expiresAt
 		}
 	}
 
@@ -266,8 +264,7 @@ func fetchChatGPTSubscriptionExpiresAt(ctx context.Context, clientFactory Privac
 }
 
 // fillAccountInfo 从单个 account 对象中提取 plan_type 和 subscription_expires_at
-func fillAccountInfo(info *ChatGPTAccountInfo, accountID string, acct map[string]any) {
-	info.AccountID = strings.TrimSpace(accountID)
+func fillAccountInfo(info *ChatGPTAccountInfo, acct map[string]any) {
 	info.PlanType = extractPlanType(acct)
 	info.SubscriptionExpiresAt = extractEntitlementExpiresAt(acct)
 }

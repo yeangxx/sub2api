@@ -907,10 +907,6 @@ export interface Account {
   proxy?: Proxy
   group_ids?: number[] // Groups this account belongs to
   groups?: Group[] // Preloaded group objects
-  failure_domain?: string
-  reliability_class?: string
-  routing_labels?: Record<string, string>
-  price_book_id?: number | null
 
   // Rate limit & scheduling fields
   schedulable: boolean
@@ -1166,10 +1162,6 @@ export interface CreateAccountRequest {
   group_ids?: number[]
   expires_at?: number | null
   auto_pause_on_expired?: boolean
-  failure_domain?: string
-  reliability_class?: string
-  routing_labels?: Record<string, string>
-  price_book_id?: number | null
   confirm_mixed_channel_risk?: boolean
 }
 
@@ -1189,10 +1181,6 @@ export interface UpdateAccountRequest {
   group_ids?: number[]
   expires_at?: number | null
   auto_pause_on_expired?: boolean
-  failure_domain?: string
-  reliability_class?: string
-  routing_labels?: Record<string, string>
-  price_book_id?: number | null
   confirm_mixed_channel_risk?: boolean
 }
 

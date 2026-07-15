@@ -86,27 +86,20 @@ func (s *openaiOAuthService) refreshTokenWithClientID(ctx context.Context, refre
 		return nil, infraerrors.Newf(http.StatusBadGateway, "OPENAI_OAUTH_CLIENT_INIT_FAILED", "create HTTP client: %v", err)
 	}
 
-	var tokenResp openai.TokenResponse
-	request := client.R().
-		SetContext(ctx).
-		SetSuccessResult(&tokenResp)
-	if clientID == openai.ChatGPTIOSClientID {
-		request.SetHeader("Content-Type", "application/json").SetBody(map[string]string{
-			"client_id":     openai.ChatGPTIOSClientID,
-			"grant_type":    "refresh_token",
-			"redirect_uri":  openai.ChatGPTIOSRedirectURI,
-			"refresh_token": refreshToken,
-		})
-	} else {
-		formData := url.Values{}
-		formData.Set("grant_type", "refresh_token")
-		formData.Set("refresh_token", refreshToken)
-		formData.Set("client_id", clientID)
-		formData.Set("scope", openai.RefreshScopes)
-		request.SetHeader("User-Agent", "codex-cli/0.91.0").SetFormDataFromValues(formData)
-	}
+	formData := url.Values{}
+	formData.Set("grant_type", "refresh_token")
+	formData.Set("refresh_token", refreshToken)
+	formData.Set("client_id", clientID)
+	formData.Set("scope", openai.RefreshScopes)
 
-	resp, err := request.Post(s.tokenURL)
+	var tokenResp openai.TokenResponse
+
+	resp, err := client.R().
+		SetContext(ctx).
+		SetHeader("User-Agent", "codex-cli/0.91.0").
+		SetFormDataFromValues(formData).
+		SetSuccessResult(&tokenResp).
+		Post(s.tokenURL)
 
 	if err != nil {
 		if shouldReturnOpenAINoProxyHint(ctx, proxyURL, err) {

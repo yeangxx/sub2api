@@ -201,28 +201,6 @@ func (Account) Fields() []ent.Field {
 			Comment("Parent account id for a linked spark shadow (NULL = normal)."),
 		field.Enum("quota_dimension").Values("global", "spark").Default("global").
 			Comment("'global' (default) or 'spark' (shadow reads codex_bengalfox)."),
-
-		// Routing metadata used by the configurable multi-upstream scheduler.
-		// These fields are intentionally optional so existing accounts continue
-		// to use the legacy scheduler until a routing policy is bound.
-		field.String("failure_domain").
-			MaxLen(100).
-			Optional().
-			Nillable().
-			Comment("Failure-domain label used to avoid hedging within one upstream failure domain."),
-		field.String("reliability_class").
-			MaxLen(30).
-			Optional().
-			Nillable().
-			Comment("Optional trusted/reliability class used by routing policy scoring."),
-		field.JSON("routing_labels", map[string]string{}).
-			Default(func() map[string]string { return map[string]string{} }).
-			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
-			Comment("Arbitrary labels available to routing-policy candidate filters."),
-		field.Int64("price_book_id").
-			Optional().
-			Nillable().
-			Comment("Optional upstream price-book id used by price-aware routing."),
 	}
 }
 
@@ -271,8 +249,5 @@ func (Account) Indexes() []ent.Index {
 		index.Fields("priority", "status"),
 		index.Fields("deleted_at"), // 软删除查询优化
 		index.Fields("parent_account_id"),
-		index.Fields("failure_domain"),
-		index.Fields("reliability_class"),
-		index.Fields("price_book_id"),
 	}
 }

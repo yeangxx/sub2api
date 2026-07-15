@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -42,7 +41,6 @@ func ProvideAdminHandlers(
 	paymentHandler *admin.PaymentHandler,
 	affiliateHandler *admin.AffiliateHandler,
 	complianceHandler *admin.ComplianceHandler,
-	routingPolicyHandler *admin.RoutingPolicyHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
 		Dashboard:              dashboardHandler,
@@ -77,18 +75,7 @@ func ProvideAdminHandlers(
 		Payment:                paymentHandler,
 		Affiliate:              affiliateHandler,
 		Compliance:             complianceHandler,
-		RoutingPolicy:          routingPolicyHandler,
 	}
-}
-
-func ProvideRoutingPolicyHandler(
-	control *service.RoutingPolicyControlService,
-	accountRepo service.AccountRepository,
-	runtime *service.RoutingPolicyRuntime,
-	encryptor service.SecretEncryptor,
-	cfg *config.Config,
-) *admin.RoutingPolicyHandler {
-	return admin.NewRoutingPolicyHandler(control, accountRepo, runtime, encryptor, cfg)
 }
 
 // ProvideSystemHandler creates admin.SystemHandler with UpdateService
@@ -206,7 +193,6 @@ var ProviderSet = wire.NewSet(
 	admin.NewPaymentHandler,
 	admin.NewAffiliateHandler,
 	admin.NewComplianceHandler,
-	ProvideRoutingPolicyHandler,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

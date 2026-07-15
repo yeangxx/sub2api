@@ -162,12 +162,3 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.False(t, ok)
 	})
 }
-
-func TestMigration178ChecksumCompatibility(t *testing.T) {
-	ok := isMigrationChecksumCompatible(
-		"178_routing_policy_integrity.sql",
-		"41517c4d8a60d39c36900399e405fd30a0cbf2e68a12dda1088efec7a6519695",
-		"ef66165e046e935a5b00c9dfe4fadf2a04a3b385358dbb5adf58042c5418daaa",
-	)
-	require.True(t, ok)
-}

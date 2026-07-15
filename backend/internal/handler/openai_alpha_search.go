@@ -63,7 +63,6 @@ func (h *OpenAIGatewayHandler) AlphaSearch(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
-	c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 	if !gjson.ValidBytes(body) {
 		logRequestBodyParseFailure(reqLog, body, nil)
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to parse request body")
@@ -107,10 +106,6 @@ func (h *OpenAIGatewayHandler) AlphaSearch(c *gin.Context) {
 	failedAccountIDs := make(map[int64]struct{})
 	var lastFailoverErr *service.UpstreamFailoverError
 	switchCount := 0
-	maxAccountSwitches := h.maxAccountSwitches
-	if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), apiKey.GroupID, maxAccountSwitches); ok {
-		maxAccountSwitches = limit
-	}
 	routingStart := time.Now()
 
 	for {
@@ -154,18 +149,16 @@ func (h *OpenAIGatewayHandler) AlphaSearch(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		forwardStart := time.Now()
 		var result *service.OpenAIForwardResult
-		attemptCtx, finishRoutingAttempt := beginRoutingAttempt(c, selection, false)
 		result, err = func() (*service.OpenAIForwardResult, error) {
-			defer finishRoutingAttempt()
 			if accountRelease != nil {
 				defer accountRelease()
 			}
-			return h.gatewayService.ForwardAlphaSearch(attemptCtx, c, account, forwardBody)
+			return h.gatewayService.ForwardAlphaSearch(c.Request.Context(), c, account, forwardBody)
 		}()
 		service.SetOpsLatencyMs(c, service.OpsResponseLatencyMsKey, time.Since(forwardStart).Milliseconds())
 
 		if err == nil {
-			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, requestedModel, true, nil)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
 			if result != nil {
 				h.recordAlphaSearchUsage(c, apiKey, account, subscription, channelMapping, requestedModel, body, result, subject.UserID)
 			}
@@ -173,16 +166,8 @@ func (h *OpenAIGatewayHandler) AlphaSearch(c *gin.Context) {
 		}
 
 		var failoverErr *service.UpstreamFailoverError
-		if !errors.As(err, &failoverErr) || !h.gatewayService.RoutingErrorRetryable(c.Request.Context(), apiKey.GroupID, err) {
-			if h.gatewayService.RoutingTransportErrorRetryable(c.Request.Context(), apiKey.GroupID, err) &&
-				c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
-				h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, requestedModel, false, nil)
-				h.gatewayService.RecordOpenAIAccountSwitch()
-				failedAccountIDs[account.ID] = struct{}{}
-				switchCount++
-				continue
-			}
-			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, requestedModel, false, nil)
+		if !errors.As(err, &failoverErr) {
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 			if c.Writer.Size() == writerSizeBeforeForward {
 				h.errorResponse(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
 			}
@@ -190,7 +175,7 @@ func (h *OpenAIGatewayHandler) AlphaSearch(c *gin.Context) {
 			return
 		}
 
-		h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, requestedModel, false, nil)
+		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 		if c.Writer.Size() != writerSizeBeforeForward {
 			h.handleFailoverExhausted(c, failoverErr, true)
 			return
@@ -198,7 +183,7 @@ func (h *OpenAIGatewayHandler) AlphaSearch(c *gin.Context) {
 		h.gatewayService.RecordOpenAIAccountSwitch()
 		failedAccountIDs[account.ID] = struct{}{}
 		lastFailoverErr = failoverErr
-		if switchCount >= maxAccountSwitches {
+		if switchCount >= h.maxAccountSwitches {
 			h.handleFailoverExhausted(c, failoverErr, false)
 			return
 		}

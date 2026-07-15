@@ -81,14 +81,6 @@ type Account struct {
 	ParentAccountID *int64 `json:"parent_account_id,omitempty"`
 	// 'global' (default) or 'spark' (shadow reads codex_bengalfox).
 	QuotaDimension account.QuotaDimension `json:"quota_dimension,omitempty"`
-	// Failure-domain label used to avoid hedging within one upstream failure domain.
-	FailureDomain *string `json:"failure_domain,omitempty"`
-	// Optional trusted/reliability class used by routing policy scoring.
-	ReliabilityClass *string `json:"reliability_class,omitempty"`
-	// Arbitrary labels available to routing-policy candidate filters.
-	RoutingLabels map[string]string `json:"routing_labels,omitempty"`
-	// Optional upstream price-book id used by price-aware routing.
-	PriceBookID *int64 `json:"price_book_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AccountQuery when eager-loading is set.
 	Edges        AccountEdges `json:"edges"`
@@ -177,15 +169,15 @@ func (*Account) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case account.FieldCredentials, account.FieldExtra, account.FieldRoutingLabels:
+		case account.FieldCredentials, account.FieldExtra:
 			values[i] = new([]byte)
 		case account.FieldAutoPauseOnExpired, account.FieldSchedulable:
 			values[i] = new(sql.NullBool)
 		case account.FieldRateMultiplier:
 			values[i] = new(sql.NullFloat64)
-		case account.FieldID, account.FieldProxyID, account.FieldProxyFallbackOriginID, account.FieldConcurrency, account.FieldLoadFactor, account.FieldPriority, account.FieldParentAccountID, account.FieldPriceBookID:
+		case account.FieldID, account.FieldProxyID, account.FieldProxyFallbackOriginID, account.FieldConcurrency, account.FieldLoadFactor, account.FieldPriority, account.FieldParentAccountID:
 			values[i] = new(sql.NullInt64)
-		case account.FieldName, account.FieldNotes, account.FieldPlatform, account.FieldType, account.FieldStatus, account.FieldErrorMessage, account.FieldTempUnschedulableReason, account.FieldSessionWindowStatus, account.FieldQuotaDimension, account.FieldFailureDomain, account.FieldReliabilityClass:
+		case account.FieldName, account.FieldNotes, account.FieldPlatform, account.FieldType, account.FieldStatus, account.FieldErrorMessage, account.FieldTempUnschedulableReason, account.FieldSessionWindowStatus, account.FieldQuotaDimension:
 			values[i] = new(sql.NullString)
 		case account.FieldCreatedAt, account.FieldUpdatedAt, account.FieldDeletedAt, account.FieldLastUsedAt, account.FieldExpiresAt, account.FieldRateLimitedAt, account.FieldRateLimitResetAt, account.FieldOverloadUntil, account.FieldTempUnschedulableUntil, account.FieldSessionWindowStart, account.FieldSessionWindowEnd:
 			values[i] = new(sql.NullTime)
@@ -417,35 +409,6 @@ func (_m *Account) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.QuotaDimension = account.QuotaDimension(value.String)
 			}
-		case account.FieldFailureDomain:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field failure_domain", values[i])
-			} else if value.Valid {
-				_m.FailureDomain = new(string)
-				*_m.FailureDomain = value.String
-			}
-		case account.FieldReliabilityClass:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field reliability_class", values[i])
-			} else if value.Valid {
-				_m.ReliabilityClass = new(string)
-				*_m.ReliabilityClass = value.String
-			}
-		case account.FieldRoutingLabels:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field routing_labels", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.RoutingLabels); err != nil {
-					return fmt.Errorf("unmarshal field routing_labels: %w", err)
-				}
-			}
-		case account.FieldPriceBookID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field price_book_id", values[i])
-			} else if value.Valid {
-				_m.PriceBookID = new(int64)
-				*_m.PriceBookID = value.Int64
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -638,24 +601,6 @@ func (_m *Account) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("quota_dimension=")
 	builder.WriteString(fmt.Sprintf("%v", _m.QuotaDimension))
-	builder.WriteString(", ")
-	if v := _m.FailureDomain; v != nil {
-		builder.WriteString("failure_domain=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := _m.ReliabilityClass; v != nil {
-		builder.WriteString("reliability_class=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	builder.WriteString("routing_labels=")
-	builder.WriteString(fmt.Sprintf("%v", _m.RoutingLabels))
-	builder.WriteString(", ")
-	if v := _m.PriceBookID; v != nil {
-		builder.WriteString("price_book_id=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

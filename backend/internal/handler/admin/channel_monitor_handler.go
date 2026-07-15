@@ -51,7 +51,6 @@ type channelMonitorCreateRequest struct {
 	ExtraHeaders     map[string]string `json:"extra_headers"`
 	BodyOverrideMode string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
 	BodyOverride     map[string]any    `json:"body_override"`
-	AccountID        *int64            `json:"account_id"`
 }
 
 type channelMonitorUpdateRequest struct {
@@ -71,8 +70,6 @@ type channelMonitorUpdateRequest struct {
 	ExtraHeaders     *map[string]string `json:"extra_headers"`
 	BodyOverrideMode *string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
 	BodyOverride     *map[string]any    `json:"body_override"`
-	AccountID        *int64             `json:"account_id"`
-	ClearAccountID   bool               `json:"clear_account_id"`
 }
 
 type channelMonitorResponse struct {
@@ -102,7 +99,6 @@ type channelMonitorResponse struct {
 	ExtraHeaders     map[string]string `json:"extra_headers"`
 	BodyOverrideMode string            `json:"body_override_mode"`
 	BodyOverride     map[string]any    `json:"body_override"`
-	AccountID        *int64            `json:"account_id,omitempty"`
 }
 
 type channelMonitorCheckResultResponse struct {
@@ -165,7 +161,6 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		ExtraHeaders:        headers,
 		BodyOverrideMode:    m.BodyOverrideMode,
 		BodyOverride:        m.BodyOverride,
-		AccountID:           m.AccountID,
 		// PrimaryStatus / PrimaryLatencyMs / Availability7d 由 List handler 在批量聚合后填充。
 	}
 	if m.LastCheckedAt != nil {
@@ -330,7 +325,6 @@ func (h *ChannelMonitorHandler) Create(c *gin.Context) {
 		ExtraHeaders:     req.ExtraHeaders,
 		BodyOverrideMode: req.BodyOverrideMode,
 		BodyOverride:     req.BodyOverride,
-		AccountID:        req.AccountID,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -368,8 +362,6 @@ func (h *ChannelMonitorHandler) Update(c *gin.Context) {
 		ExtraHeaders:     req.ExtraHeaders,
 		BodyOverrideMode: req.BodyOverrideMode,
 		BodyOverride:     req.BodyOverride,
-		AccountID:        req.AccountID,
-		ClearAccountID:   req.ClearAccountID,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

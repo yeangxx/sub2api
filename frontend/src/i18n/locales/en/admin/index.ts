@@ -4,7 +4,6 @@ import accounts from './accounts'
 import resources from './resources'
 import ops from './ops'
 import settings from './settings'
-import routingPolicies from './routingPolicies'
 
 export default {
   ...overview,
@@ -13,5 +12,4 @@ export default {
   ...resources,
   ...ops,
   ...settings,
-  ...routingPolicies,
 }

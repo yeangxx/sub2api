@@ -839,14 +839,6 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	if len(accounts) == 0 {
 		return nil, ErrNoAvailableAccounts
 	}
-	if policySelection, handled, policyErr := s.selectWithRoutingPolicy(ctx, groupID, platform, requestedModel, requiredCapability, requireCompact, needsUpstreamCheck, sessionHash, excludedIDs, accounts); handled {
-		if policyErr != nil {
-			return nil, policyErr
-		}
-		if policySelection != nil {
-			return policySelection, nil
-		}
-	}
 
 	isExcluded := func(accountID int64) bool {
 		if excludedIDs == nil {

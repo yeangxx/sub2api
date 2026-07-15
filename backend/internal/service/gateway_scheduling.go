@@ -210,14 +210,6 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	if len(accounts) == 0 {
 		return nil, ErrNoAvailableAccounts
 	}
-	if policySelection, handled, policyErr := s.selectWithRoutingPolicy(ctx, groupID, group, platform, useMixed, requestedModel, sessionHash, excludedIDs, accounts); handled {
-		if policyErr != nil {
-			return nil, policyErr
-		}
-		if policySelection != nil {
-			return policySelection, nil
-		}
-	}
 	ctx = s.withWindowCostPrefetch(ctx, accounts)
 	ctx = s.withRPMPrefetch(ctx, accounts)
 

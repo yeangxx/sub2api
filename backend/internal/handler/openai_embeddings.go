@@ -59,7 +59,6 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
-	c.Request = c.Request.WithContext(service.WithRoutingTokenEstimatesFromJSON(c.Request.Context(), body))
 	if !gjson.ValidBytes(body) {
 		logRequestBodyParseFailure(reqLog, body, nil)
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to parse request body")
@@ -105,9 +104,6 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 	maxAccountSwitches := h.maxAccountSwitches
 	if maxAccountSwitches <= 0 {
 		maxAccountSwitches = 3
-	}
-	if limit, ok := h.gatewayService.RoutingRetrySwitchLimit(c.Request.Context(), apiKey.GroupID, maxAccountSwitches); ok {
-		maxAccountSwitches = limit
 	}
 	routingStart := time.Now()
 
@@ -164,21 +160,17 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 		forwardStart := time.Now()
 
 		forwardBody := body
-		if mapped := strings.TrimSpace(selection.RoutingMappedModel); mapped != "" && mapped != reqModel {
-			forwardBody = h.gatewayService.ReplaceModelInBody(body, mapped)
-		} else if channelMapping.Mapped {
+		if channelMapping.Mapped {
 			forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
 		}
 		writerSizeBeforeForward := c.Writer.Size()
-		attemptCtx, finishRoutingAttempt := beginRoutingAttempt(c, selection, false)
 		result, err := func() (*service.OpenAIForwardResult, error) {
-			defer finishRoutingAttempt()
 			defer func() {
 				if accountReleaseFunc != nil {
 					accountReleaseFunc()
 				}
 			}()
-			return h.gatewayService.ForwardEmbeddings(attemptCtx, c, account, forwardBody, "")
+			return h.gatewayService.ForwardEmbeddings(c.Request.Context(), c, account, forwardBody, "")
 		}()
 
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
@@ -191,12 +183,12 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
-			if errors.As(err, &failoverErr) && h.gatewayService.RoutingErrorRetryable(c.Request.Context(), apiKey.GroupID, err) {
+			if errors.As(err, &failoverErr) {
 				if c.Writer.Size() != writerSizeBeforeForward {
 					h.handleFailoverExhausted(c, failoverErr, true)
 					return
 				}
-				h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 				h.gatewayService.RecordOpenAIAccountSwitch()
 				failedAccountIDs[account.ID] = struct{}{}
 				lastFailoverErr = failoverErr
@@ -213,15 +205,7 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 				)
 				continue
 			}
-			if h.gatewayService.RoutingTransportErrorRetryable(c.Request.Context(), apiKey.GroupID, err) &&
-				c.Writer.Size() == writerSizeBeforeForward && switchCount < maxAccountSwitches {
-				h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
-				h.gatewayService.RecordOpenAIAccountSwitch()
-				failedAccountIDs[account.ID] = struct{}{}
-				switchCount++
-				continue
-			}
-			h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, false, nil)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 			if c.Writer.Size() == writerSizeBeforeForward {
 				h.errorResponse(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
 			}
@@ -232,7 +216,7 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 			return
 		}
 
-		h.gatewayService.ReportOpenAIAccountRoutingResult(c.Request.Context(), selection, account.ID, reqModel, true, nil)
+		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
 		userAgent := c.GetHeader("User-Agent")
 		clientIP := ip.GetClientIP(c)
 		inboundEndpoint := GetInboundEndpoint(c)

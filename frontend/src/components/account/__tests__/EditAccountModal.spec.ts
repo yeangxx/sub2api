@@ -140,23 +140,6 @@ const GroupSelectorStub = defineComponent({
   `
 })
 
-const AccountRoutingFieldsStub = defineComponent({
-  name: 'AccountRoutingFields',
-  props: {
-    failureDomain: { type: String, default: '' },
-    reliabilityClass: { type: String, default: '' },
-    routingLabels: { type: Object, default: () => ({}) },
-    priceBookId: { type: Number, default: null }
-  },
-  emits: [
-    'update:failureDomain',
-    'update:reliabilityClass',
-    'update:routingLabels',
-    'update:priceBookId'
-  ],
-  template: '<div data-testid="account-routing-fields" />'
-})
-
 function buildAccount() {
   return {
     id: 1,
@@ -322,7 +305,6 @@ function mountModal(account = buildAccount()) {
         Icon: true,
         ProxySelector: true,
         GroupSelector: GroupSelectorStub,
-        AccountRoutingFields: AccountRoutingFieldsStub,
         ModelWhitelistSelector: ModelWhitelistSelectorStub
       }
     }
@@ -332,43 +314,6 @@ function mountModal(account = buildAccount()) {
 describe('EditAccountModal', () => {
   beforeEach(() => {
     authIsSimpleMode.value = true
-  })
-
-  it('rehydrates routing settings and submits cleared values with price book zero', async () => {
-    const account = {
-      ...buildAccount(),
-      failure_domain: 'az-a',
-      reliability_class: 'trusted',
-      routing_labels: { region: 'ap-east' },
-      price_book_id: 12
-    }
-    updateAccountMock.mockReset()
-    checkMixedChannelRiskMock.mockReset()
-    checkMixedChannelRiskMock.mockResolvedValue({ has_risk: false })
-    updateAccountMock.mockResolvedValue(account)
-
-    const wrapper = mountModal(account)
-    const routingFields = wrapper.getComponent(AccountRoutingFieldsStub)
-    expect(routingFields.props()).toMatchObject({
-      failureDomain: 'az-a',
-      reliabilityClass: 'trusted',
-      routingLabels: { region: 'ap-east' },
-      priceBookId: 12
-    })
-
-    routingFields.vm.$emit('update:failureDomain', '')
-    routingFields.vm.$emit('update:reliabilityClass', '')
-    routingFields.vm.$emit('update:routingLabels', {})
-    routingFields.vm.$emit('update:priceBookId', null)
-    await wrapper.vm.$nextTick()
-    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
-
-    expect(updateAccountMock.mock.calls[0]?.[1]).toMatchObject({
-      failure_domain: '',
-      reliability_class: '',
-      routing_labels: {},
-      price_book_id: 0
-    })
   })
 
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {

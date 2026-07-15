@@ -252,10 +252,6 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 		GroupIDs:                a.GroupIDs,
 		ParentAccountID:         a.ParentAccountID,
 		QuotaDimension:          a.QuotaDimension,
-		FailureDomain:           a.FailureDomain,
-		ReliabilityClass:        a.ReliabilityClass,
-		RoutingLabels:           cloneStringMap(a.RoutingLabels),
-		PriceBookID:             a.PriceBookID,
 	}
 
 	// 提取 5h 窗口费用控制和会话数量控制配置（仅 Anthropic OAuth/SetupToken 账号有效）
@@ -415,17 +411,6 @@ func timeToUnixSeconds(value *time.Time) *int64 {
 	}
 	ts := value.Unix()
 	return &ts
-}
-
-func cloneStringMap(in map[string]string) map[string]string {
-	if in == nil {
-		return nil
-	}
-	out := make(map[string]string, len(in))
-	for key, value := range in {
-		out[key] = value
-	}
-	return out
 }
 
 func AccountGroupFromService(ag *service.AccountGroup) *AccountGroup {

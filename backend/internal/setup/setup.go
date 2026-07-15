@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -47,18 +46,15 @@ func GetDataDir() string {
 		return dir
 	}
 
-	// On Windows, /app/data resolves to <current-drive>:\app\data and can
-	// accidentally select an unrelated host directory during local development.
-	if runtime.GOOS != "windows" {
-		dockerDataDir := "/app/data"
-		if info, err := os.Stat(dockerDataDir); err == nil && info.IsDir() {
-			// Try to check if writable by creating a temp file
-			testFile := dockerDataDir + "/.write_test"
-			if f, err := os.Create(testFile); err == nil {
-				_ = f.Close()
-				_ = os.Remove(testFile)
-				return dockerDataDir
-			}
+	// Check if /app/data exists and is writable (Docker environment)
+	dockerDataDir := "/app/data"
+	if info, err := os.Stat(dockerDataDir); err == nil && info.IsDir() {
+		// Try to check if writable by creating a temp file
+		testFile := dockerDataDir + "/.write_test"
+		if f, err := os.Create(testFile); err == nil {
+			_ = f.Close()
+			_ = os.Remove(testFile)
+			return dockerDataDir
 		}
 	}
 

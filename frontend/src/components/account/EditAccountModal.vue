@@ -2501,13 +2501,6 @@
         </div>
       </div>
 
-      <AccountRoutingFields
-        v-model:failureDomain="form.failure_domain"
-        v-model:reliabilityClass="form.reliability_class"
-        v-model:routingLabels="form.routing_labels"
-        v-model:priceBookId="form.price_book_id"
-      />
-
       <!-- Group Selection - 仅标准模式显示 -->
       <GroupSelector
         v-if="!authStore.isSimpleMode"
@@ -2585,8 +2578,7 @@ import type {
   CheckMixedChannelResponse,
   OpenAICompactMode,
   OpenAIResponsesMode,
-  OpenAIEndpointCapability,
-  UpdateAccountRequest
+  OpenAIEndpointCapability
 } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -2597,8 +2589,6 @@ import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
-import AccountRoutingFields from '@/components/account/AccountRoutingFields.vue'
-import { withAccountRoutingUpdateFields } from '@/components/account/accountRoutingForm'
 import {
   applyAntigravityProjectID,
   applyHeaderOverride,
@@ -3139,11 +3129,7 @@ const form = reactive({
   rate_multiplier: 1,
   status: 'active' as 'active' | 'inactive' | 'error',
   group_ids: [] as number[],
-  expires_at: null as number | null,
-  failure_domain: '',
-  reliability_class: '',
-  routing_labels: {} as Record<string, string>,
-  price_book_id: null as number | null
+  expires_at: null as number | null
 })
 
 const statusOptions = computed(() => {
@@ -3235,10 +3221,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     : 'active'
   form.group_ids = newAccount.group_ids || []
   form.expires_at = newAccount.expires_at ?? null
-  form.failure_domain = newAccount.failure_domain || ''
-  form.reliability_class = newAccount.reliability_class || ''
-  form.routing_labels = { ...(newAccount.routing_labels || {}) }
-  form.price_book_id = newAccount.price_book_id ?? null
 
   // Load intercept warmup requests setting (applies to all account types)
   const credentials = newAccount.credentials as Record<string, unknown> | undefined
@@ -3918,7 +3900,7 @@ const openMixedChannelDialog = (opts: {
   showMixedChannelWarning.value = true
 }
 
-const withAntigravityConfirmFlag = (payload: UpdateAccountRequest): UpdateAccountRequest => {
+const withAntigravityConfirmFlag = (payload: Record<string, unknown>) => {
   if (needsMixedChannelCheck() && antigravityMixedChannelConfirmed.value) {
     return {
       ...payload,
@@ -3974,7 +3956,7 @@ const handleClose = () => {
   emit('close')
 }
 
-const submitUpdateAccount = async (accountID: number, updatePayload: UpdateAccountRequest) => {
+const submitUpdateAccount = async (accountID: number, updatePayload: Record<string, unknown>) => {
   submitting.value = true
   try {
     const updatedAccount = await adminAPI.accounts.update(accountID, withAntigravityConfirmFlag(updatePayload))
@@ -4007,10 +3989,7 @@ const handleSubmit = async () => {
     return
   }
 
-  const updatePayload = withAccountRoutingUpdateFields(
-    { ...form },
-    form
-  )
+  const updatePayload: Record<string, unknown> = { ...form }
   try {
     // 后端期望 proxy_id: 0 表示清除代理，而不是 null
     if (updatePayload.proxy_id === null) {

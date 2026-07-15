@@ -101,44 +101,11 @@ func RegisterAdminRoutes(
 		// 渠道监控
 		registerChannelMonitorRoutes(admin, h)
 
-		registerRoutingPolicyRoutes(admin, h)
-
 		// 风控中心
 		registerContentModerationRoutes(admin, h)
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
-	}
-}
-
-func registerRoutingPolicyRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
-	policies := admin.Group("/routing-policies")
-	{
-		policies.GET("", h.Admin.RoutingPolicy.List)
-		policies.POST("", h.Admin.RoutingPolicy.Create)
-		policies.GET("/effective", h.Admin.RoutingPolicy.Effective)
-		policies.GET("/:id", h.Admin.RoutingPolicy.Get)
-		policies.PUT("/:id", h.Admin.RoutingPolicy.Update)
-		policies.DELETE("/:id", h.Admin.RoutingPolicy.Delete)
-		policies.POST("/:id/validate", h.Admin.RoutingPolicy.Validate)
-		policies.POST("/:id/simulate", h.Admin.RoutingPolicy.Simulate)
-		policies.POST("/:id/publish", h.Admin.RoutingPolicy.Publish)
-		policies.GET("/:id/versions", h.Admin.RoutingPolicy.Versions)
-		policies.POST("/:id/versions/:version/restore", h.Admin.RoutingPolicy.Restore)
-		policies.POST("/:id/bindings/groups/:group_id", h.Admin.RoutingPolicy.BindGroup)
-		policies.DELETE("/:id/bindings/groups/:group_id", h.Admin.RoutingPolicy.UnbindGroup)
-	}
-	books := admin.Group("/upstream-price-books")
-	{
-		books.GET("", h.Admin.RoutingPolicy.ListPriceBooks)
-		books.POST("", h.Admin.RoutingPolicy.CreatePriceBook)
-		books.GET("/:id", h.Admin.RoutingPolicy.PriceBook)
-		books.PUT("/:id", h.Admin.RoutingPolicy.UpdatePriceBook)
-		books.DELETE("/:id", h.Admin.RoutingPolicy.DeletePriceBook)
-		books.GET("/:id/revisions", h.Admin.RoutingPolicy.PriceBookRevisions)
-		books.POST("/:id/revisions", h.Admin.RoutingPolicy.CreatePriceBookRevision)
-		books.POST("/:id/sync", h.Admin.RoutingPolicy.SyncPriceBook)
-		books.POST("/:id/revisions/:version/publish", h.Admin.RoutingPolicy.PublishPriceBookRevision)
 	}
 }
 

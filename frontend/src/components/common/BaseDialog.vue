@@ -42,20 +42,6 @@
   </Teleport>
 </template>
 
-<script lang="ts">
-let bodyModalLockCount = 0
-
-function acquireBodyModalLock() {
-  bodyModalLockCount += 1
-  document.body.classList.add('modal-open')
-}
-
-function releaseBodyModalLock() {
-  if (bodyModalLockCount > 0) bodyModalLockCount -= 1
-  if (bodyModalLockCount === 0) document.body.classList.remove('modal-open')
-}
-</script>
-
 <script setup lang="ts">
 import { computed, watch, onMounted, onUnmounted, ref, nextTick } from 'vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -67,19 +53,6 @@ const dialogId = `modal-title-${++dialogIdCounter}`
 // 焦点管理
 const dialogRef = ref<HTMLElement | null>(null)
 let previousActiveElement: HTMLElement | null = null
-let ownsBodyModalLock = false
-
-function acquireOwnedBodyLock() {
-  if (ownsBodyModalLock) return
-  ownsBodyModalLock = true
-  acquireBodyModalLock()
-}
-
-function releaseOwnedBodyLock() {
-  if (!ownsBodyModalLock) return
-  ownsBodyModalLock = false
-  releaseBodyModalLock()
-}
 
 type DialogWidth = 'narrow' | 'normal' | 'wide' | 'extra-wide' | 'full'
 
@@ -146,18 +119,18 @@ watch(
       // 保存当前焦点元素
       previousActiveElement = document.activeElement as HTMLElement
       // 使用CSS类而不是直接操作style,更易于管理多个对话框
-      acquireOwnedBodyLock()
+      document.body.classList.add('modal-open')
 
       // 等待DOM更新后设置焦点到对话框
       await nextTick()
-      if (props.show && ownsBodyModalLock && dialogRef.value) {
+      if (dialogRef.value) {
         const firstFocusable = dialogRef.value.querySelector<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         )
         firstFocusable?.focus()
       }
     } else {
-      releaseOwnedBodyLock()
+      document.body.classList.remove('modal-open')
       // 恢复之前的焦点
       if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
         previousActiveElement.focus()
@@ -174,6 +147,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
-  releaseOwnedBodyLock()
+  // 确保组件卸载时移除滚动锁定
+  document.body.classList.remove('modal-open')
 })
 </script>
